@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, FormEvent } from "react";
 import { Context } from "@/components/Context";
 import Header from "@/components/Header";
 import Chat from "@/components/Chat";
+import FileUpload from "@/components/FileUpload";
 import { useChat } from "ai/react";
 import InstructionModal from "./components/InstructionModal";
 import { AiFillGithub, AiOutlineInfoCircle } from "react-icons/ai";
@@ -12,6 +13,21 @@ const Page: React.FC = () => {
   const [gotMessages, setGotMessages] = useState(false);
   const [context, setContext] = useState<string[] | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [namespace, setNamespace] = useState<string>("");
+
+  // Initialize namespace on mount
+  useEffect(() => {
+    // Try to get existing namespace from localStorage
+    let existingNamespace = localStorage.getItem("pinecone-namespace");
+
+    if (!existingNamespace) {
+      // Generate a new namespace ID
+      existingNamespace = `user-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      localStorage.setItem("pinecone-namespace", existingNamespace);
+    }
+
+    setNamespace(existingNamespace);
+  }, []);
 
   const { messages, input, handleInputChange, handleSubmit } = useChat({
     onFinish: async () => {
@@ -34,6 +50,7 @@ const Page: React.FC = () => {
         method: "POST",
         body: JSON.stringify({
           messages,
+          namespace,
         }),
       });
       const { context } = await response.json();
@@ -44,7 +61,7 @@ const Page: React.FC = () => {
     }
 
     prevMessagesLengthRef.current = messages.length;
-  }, [messages, gotMessages]);
+  }, [messages, gotMessages, namespace]);
 
   return (
     <div className="flex flex-col justify-between h-screen bg-gray-800 p-2 mx-auto max-w-full">
@@ -79,8 +96,22 @@ const Page: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setModalOpen(false)}
       />
+
+      {/* File Upload Section */}
+      <div className="w-full max-w-4xl mx-auto mb-4 px-2">
+        <FileUpload
+          namespace={namespace}
+          onUploadSuccess={(data) => {
+            console.log("Upload successful:", data);
+          }}
+          onUploadError={(error) => {
+            console.error("Upload error:", error);
+          }}
+        />
+      </div>
+
       <div className="flex w-full flex-grow overflow-hidden relative">
-        <Chat/>
+        <Chat />
         <div className="absolute transform translate-x-full transition-transform duration-500 ease-in-out right-0 w-2/3 h-full bg-gray-700 overflow-y-auto lg:static lg:translate-x-0 lg:w-2/5 lg:mx-2 rounded-lg">
           <Context className="" selected={context} />
         </div>

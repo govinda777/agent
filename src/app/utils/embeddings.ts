@@ -8,9 +8,11 @@ const openai = new OpenAIApi(config)
 
 export async function getEmbeddings(input: string) {
   try {
+    // @ts-ignore - dimensions parameter is supported by OpenAI API but not in openai-edge types
     const response = await openai.createEmbedding({
-      model: "text-embedding-ada-002",
-      input: input.replace(/\n/g, ' ')
+      model: "text-embedding-3-small",
+      input: input.replace(/\n/g, ' '),
+      dimensions: 512 // Match Pinecone index dimension
     })
 
     const result = await response.json();
