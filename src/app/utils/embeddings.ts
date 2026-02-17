@@ -13,7 +13,7 @@ export async function getEmbeddings(input: string) {
       model: "text-embedding-3-small",
       input: input.replace(/\n/g, ' '),
       dimensions: 512 // Match Pinecone index dimension
-    })
+    } as any)
 
     const result = await response.json();
 

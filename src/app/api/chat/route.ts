@@ -4,9 +4,6 @@ import { getContext } from '@/utils/context'
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 
-// IMPORTANT! Set the runtime to edge
-export const runtime = 'edge'
-
 export async function POST(req: Request) {
   try {
 
