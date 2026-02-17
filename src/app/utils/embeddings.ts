@@ -14,6 +14,13 @@ export async function getEmbeddings(input: string) {
     })
 
     const result = await response.json();
+
+    // Check if the response has the expected structure
+    if (!result.data || !Array.isArray(result.data) || result.data.length === 0) {
+      console.error("Invalid OpenAI API response:", result);
+      throw new Error(`Invalid response from OpenAI API: ${JSON.stringify(result)}`);
+    }
+
     return result.data[0].embedding as number[]
 
   } catch (e) {

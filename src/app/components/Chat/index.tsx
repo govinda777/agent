@@ -2,7 +2,7 @@
 
 import React, { FormEvent, ChangeEvent } from "react";
 import Messages from "./Messages";
-import { Message, useChat } from "ai/react";
+import { useChat } from "ai/react";
 
 const Chat: React.FC = () => {
   const { messages, input, handleInputChange, handleSubmit } = useChat();
