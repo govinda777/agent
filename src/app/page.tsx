@@ -14,6 +14,8 @@ const Page: React.FC = () => {
   const [context, setContext] = useState<string[] | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
   const [namespace, setNamespace] = useState<string>("");
+  const [agents, setAgents] = useState<any[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<string>("default");
 
   // Initialize namespace on mount
   useEffect(() => {
@@ -27,9 +29,24 @@ const Page: React.FC = () => {
     }
 
     setNamespace(existingNamespace);
+
+    // Fetch agents
+    const fetchAgents = async () => {
+      try {
+        const res = await fetch("/api/agents");
+        const data = await res.json();
+        if (data.agents) {
+          setAgents(data.agents);
+        }
+      } catch (err) {
+        console.error("Failed to fetch agents", err);
+      }
+    };
+    fetchAgents();
   }, []);
 
   const { messages, input, handleInputChange, handleSubmit } = useChat({
+    api: `/api/agents/${selectedAgent}/chat`,
     onFinish: async () => {
       setGotMessages(true);
     },
@@ -110,8 +127,22 @@ const Page: React.FC = () => {
         />
       </div>
 
+      {/* Agent Selector */}
+      <div className="w-full max-w-4xl mx-auto mb-4 px-2 text-white">
+        <label className="mr-2">Select Agent:</label>
+        <select
+          className="bg-gray-700 p-2 rounded"
+          value={selectedAgent}
+          onChange={(e) => setSelectedAgent(e.target.value)}
+        >
+          {agents.map(a => (
+            <option key={a.id} value={a.id}>{a.name}</option>
+          ))}
+        </select>
+      </div>
+
       <div className="flex w-full flex-grow overflow-hidden relative">
-        <Chat />
+        <Chat agentId={selectedAgent} />
         <div className="absolute transform translate-x-full transition-transform duration-500 ease-in-out right-0 w-2/3 h-full bg-gray-700 overflow-y-auto lg:static lg:translate-x-0 lg:w-2/5 lg:mx-2 rounded-lg">
           <Context className="" selected={context} />
         </div>

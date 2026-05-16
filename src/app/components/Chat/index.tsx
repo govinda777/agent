@@ -4,8 +4,14 @@ import React, { FormEvent, ChangeEvent } from "react";
 import Messages from "./Messages";
 import { useChat } from "ai/react";
 
-const Chat: React.FC = () => {
-  const { messages, input, handleInputChange, handleSubmit } = useChat();
+interface ChatProps {
+  agentId?: string;
+}
+
+const Chat: React.FC<ChatProps> = ({ agentId = 'default' }) => {
+  const { messages, input, handleInputChange, handleSubmit } = useChat({
+    api: `/api/agents/${agentId}/chat`,
+  });
 
   return (
     <div id="chat" className="flex flex-col w-full lg:w-3/5 mr-4 mx-5 lg:mx-0">
