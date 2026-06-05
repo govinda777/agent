@@ -1,5 +1,4 @@
-Aqui está a nova versão do seu plano de arquitetura. Observe como a remoção do Redis e do Vercel AI Gateway reduziu drasticamente a complexidade do sistema, transferindo a responsabilidade do "Hot Path" (bloqueios e contagem em milissegundos) inteiramente para o Helicone.
-### Multi-Tenant AI Agent Platform: Governance, Authentication, and Quotas
+# Multi-Tenant AI Agent Platform: Governance, Authentication, and Quotas
 ## 1. Technology Stack
  * **User Authentication (Dashboard):** Privy (Identity provider for tenant owners to manage accounts).
  * **LLM Gateway & Governance:** Helicone (Managed proxy for routing, token tracking, budget limits, and API Key Vault).
