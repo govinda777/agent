@@ -1,54 +1,120 @@
-# 2. Jornadas de Usuário e UI/UX
+# 2. Jornadas de Usuário e Fluxos Globais End-to-End
 
-Para garantir que a plataforma tenha uma adoção suave, a experiência do usuário (UX) focará em clareza, feedbacks imediatos e processos "Self-Service". Esta seção define as jornadas do ponto de vista do **Tenant Owner** (o assinante da plataforma).
+A arquitetura do sistema e a experiência do usuário (UX) precisam fluir juntas. Esta seção documenta os caminhos ponta-a-ponta que o cliente ("Tenant Owner") irá trilhar, clarificando os processos assíncronos e a delegação de interface (UI) entre a nossa plataforma e os serviços integrados.
 
-## 2.1 Jornada de Onboarding
+## 2.1 Jornada Global A: Onboarding e Subscrição Inicial
 
-**Objetivo:** Permitir que um novo cliente se cadastre, pague a assinatura e obtenha acesso à criação de agentes no menor tempo possível.
+O objetivo desta jornada é minimizar o atrito, garantindo que o utilizador consiga testar o produto de forma rápida (através da criação inicial de conta), mas estabelecendo imediatamente a conversão no Stripe como portal de transição.
 
-1. **Acesso e Registro:**
-   * O cliente acessa o site comercial e clica em "Começar Agora".
-   * A integração com **Privy** exibe um modal amigável (suportando Social Logins, Google, Apple ou Passwordless via e-mail).
-   * Após a validação, a conta é provisionada com status pendente.
+### O Fluxo
 
-2. **Escolha de Planos (Checkout):**
-   * O usuário é redirecionado para a tela de Planos (Tiers). Ele seleciona a oferta (ex: Plano Básico, Pro, ou Enterprise).
-   * Inicia-se o fluxo com o **Stripe Checkout**.
-   * Ao finalizar o pagamento, a plataforma recebe o Webhook de sucesso, atualiza o status no **Neon DB** (PostgreSQL) e o usuário ganha acesso ao Dashboard principal.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Utilizador (Tenant)
+    participant UI as Govinda UI (Next.js)
+    participant Privy as Privy (Auth)
+    participant DB as Neon DB (PostgreSQL)
+    participant Stripe as Stripe (Billing)
 
-## 2.2 Jornada de Criação do Agente
+    User->>UI: Acessa Landing Page e clica "Começar"
+    UI->>Privy: Aciona Modal de Autenticação
+    Privy-->>User: Solicita Email/Google Login
+    User->>Privy: Confirma Identidade
+    Privy-->>UI: Retorna JWT e UserID
 
-**Objetivo:** Guiar o Tenant na configuração do "cérebro" de sua IA e no seu comportamento, sem a necessidade de habilidades técnicas de programação.
+    UI->>DB: POST /api/tenants (Verifica/Cria Registo do Utilizador)
+    DB-->>UI: Retorna Status do Plano (ex: "Sem Plano Ativo")
 
-1. **Definição de Perfil:**
-   * O usuário navega para a página `Meus Agentes` e clica em `Criar Novo Agente`.
-   * Ele define informações primárias: *Nome do Agente*, *Descrição*, e *System Prompt* (ex: "Você é um atendente da loja X focado em vendas amigáveis").
+    UI-->>User: Apresenta Ecrã de Seleção de Planos (Tiers)
+    User->>UI: Escolhe o "Plano Starter (R$97/mês)" e clica Assinar
 
-2. **Injeção de Base de Conhecimento (RAG/Pinecone):**
-   * Tela de **Upload de Documentos**: O usuário arrasta PDFs, arquivos TXT ou insere uma URL de site.
-   * *Ação do Sistema:* O backend processa o arquivo, fatia o texto (chunks) e faz o "Ingest" gravando os dados no banco vetorial Pinecone, em um *namespace exclusivo* vinculado ao ID do Agente.
-   * Feedback visual é essencial: Barras de progresso e indicativo de "Documento Indexado com Sucesso".
+    UI->>Stripe: POST /api/checkout-session
+    Stripe-->>UI: Retorna Checkout URL
+    UI-->>User: Redireciona navegador para o Checkout Stripe
 
-3. **Configuração de Ferramentas e Funcionalidades (Tools):**
-   * De acordo com o Plano Assinado, checkboxes são exibidas.
-   * O Tenant habilita ferramentas que o agente deve usar: ex: `[x] Agendamento de Reuniões`, `[x] Consulta de Estoque`, `[x] Web Scraper`.
+    User->>Stripe: Preenche Cartão de Crédito e Paga
+    Stripe-->>UI: Redireciona para /success (Confirmação Visual)
 
-4. **Implantação (Deployment):**
-   * O usuário finaliza a configuração e o backend gera automaticamente uma **Chave Virtual do Helicone (Virtual Key)** em background.
-   * A plataforma retorna links de integração prontos para uso: "URL do seu Webchat", ou instruções para "Conectar WhatsApp".
+    note over Stripe, DB: Webhook Assíncrono Background
+    Stripe->>DB: Webhook (checkout.session.completed)
+    DB->>DB: Atualiza `plan_id` e `is_active = true`
+```
 
-## 2.3 Jornada de Analytics e Monitoramento
+---
 
-**Objetivo:** Proporcionar visibilidade total sobre como a IA está sendo usada e quão perto o usuário está do teto do plano dele.
+## 2.2 Jornada Global B: Criação de Agente, Base de Dados (RAG) e Implementação
 
-1. **Visão Geral do Consumo (Dashboard):**
-   * Tela principal exibe KPIs: *Total de Interações Hoje*, *Tokens Consumidos no Mês*, *Economia vs Plano*.
-   * Os gráficos exibidos no dashboard consumirão iFrames nativos ou dados da API analítica provida pelo **Helicone** para desenhar o consumo.
+Com a conta já paga, a jornada principal ocorre no Dashboard de Configuração, onde o sistema faz a ponte entre o Pinecone e a Governança Helicone.
 
-2. **Histórico de Conversas (Log View):**
-   * O Tenant Owner pode acessar a "Caixa de Entrada" ou "Logs".
-   * Ele consegue ler as conversas reais que os clientes dele tiveram com o agente para avaliar a qualidade e ajustar o *System Prompt* se necessário.
+### Fluxo Visual
 
-3. **Notificações de Limites (Alertas UX):**
-   * Quando o consumo do usuário atinge 80% do pacote mensal de tokens, a plataforma exibe um *banner de alerta laranja* sugerindo um upgrade.
-   * Se o limite bater 100% (e não houver cobrança extra autorizada), o agente congela e o painel acusa: *"Cota de requisições excedida. Atualize seu plano para continuar atendendo"*.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Tenant as Tenant Owner
+    participant UI as Dashboard (Next.js)
+    participant DB as Neon DB
+    participant Pinecone as Pinecone (RAG Vector)
+    participant Helicone as Helicone (AI Gateway)
+
+    Tenant->>UI: Clica "Novo Agente"
+    UI-->>Tenant: Apresenta formulário (Nome, Descrição, System Prompt)
+    Tenant->>UI: Submete formulário básico
+    UI->>DB: Regista Agente (Status: Draft)
+
+    Tenant->>UI: Área de "Conhecimento" - Faz Upload de 2 PDFs
+    UI->>UI: Processa Chunking dos PDFs (Chunks de Texto)
+    UI->>Pinecone: Gera Embeddings + Upsert obrigando Namespace = `agent_id`
+    Pinecone-->>UI: Confirma Indexação
+
+    Tenant->>UI: Ativa Canal "WebWidget" e Finaliza
+    UI->>Helicone: POST API/VirtualKeys (Passa os limites de Orçamento do Tier)
+    Helicone-->>UI: Retorna `virtual_key_id`
+    UI->>DB: Associa o `virtual_key_id` ao Agente
+
+    UI-->>Tenant: Exibe Ecrã "Sucesso" com Snippet JavaScript e Link de Teste
+```
+
+---
+
+## 2.3 Jornada Global C: Gestão de Pagamento Recusado e Bloqueio
+
+A segurança comercial da plataforma assenta na sua capacidade de travar custos instantaneamente se um utilizador não pagar, ao mesmo tempo que oferece uma UX clara de resolução, sem o suporte humano precisar de intervir.
+
+### Sequência de Ações
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Tenant as Tenant Owner
+    participant Stripe as Stripe
+    participant Backend as Webhook Worker
+    participant DB as Neon DB
+    participant Helicone as Helicone Proxy
+    participant UI as Dashboard
+
+    note over Stripe: Chega dia de Faturação
+    Stripe->>Stripe: Tenta debitar Cartão
+    Stripe-->>Stripe: Cartão Recusado (Sem saldo)
+
+    Stripe->>Backend: Envia Webhook `invoice.payment_failed`
+    Backend->>DB: UPDATE tenants SET is_active = false
+    Backend->>Helicone: PATCH Virtual Key (Muda status para SUSPENSO/Disabled)
+
+    note over Helicone: Os Agentes do cliente deixam instantaneamente de gastar Tokens
+
+    Tenant->>UI: Faz Login no Painel
+    UI->>DB: Puxa Status do Tenant
+    DB-->>UI: Retorna `is_active = false`
+
+    UI-->>Tenant: Mostra Banner Vermelho ("Pagamento Pendente. Agentes Pausados")
+    Tenant->>UI: Clica em "Atualizar Método de Pagamento"
+    UI->>Stripe: Chama API de Billing Portal do Stripe
+    Stripe-->>Tenant: Ecrã nativo Stripe para alterar o Cartão
+
+    Tenant->>Stripe: Atualiza e quita o débito
+    Stripe->>Backend: Webhook `invoice.paid`
+    Backend->>DB: Restaura `is_active = true`
+    Backend->>Helicone: PATCH Virtual Key (Reativa)
+```
