@@ -5,12 +5,10 @@
 ▲ Next.js 16.2.7 (Turbopack)
 - Local:         http://localhost:3000
 - Network:       http://192.168.0.2:3000
-✓ Ready in 625ms
+✓ Ready in 553ms
 
-○ Compiling / ...
- HEAD / 200 in 3.8s (next.js: 3.5s, application-code: 276ms)
- GET / 200 in 135ms (next.js: 11ms, application-code: 124ms)
- GET /checkout 200 in 724ms (next.js: 623ms, application-code: 101ms)
- GET /onboarding 200 in 789ms (next.js: 709ms, application-code: 79ms)
- GET /agents/new 200 in 806ms (next.js: 737ms, application-code: 69ms)
+✓ Finished writing to filesystem cache in 11.7s
+○ Compiling /login ...
+ HEAD /login 200 in 6.1s (next.js: 5.0s, application-code: 1024ms)
+ GET /login 200 in 123ms (next.js: 10ms, application-code: 113ms)
 [?25h
