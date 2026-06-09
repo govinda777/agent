@@ -1,0 +1,4 @@
+import '@testing-library/jest-dom'
+
+process.env.ENCRYPTION_KEY = '12345678901234567890123456789012';
+
