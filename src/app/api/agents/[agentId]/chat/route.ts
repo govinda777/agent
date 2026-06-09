@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getDecryptedAgentById } from '@/lib/db/agents';
+import { PrismaAgentRepository } from '@/modules/agents/infrastructure/PrismaAgentRepository';
+import { ProcessAgentChatUseCase } from '@/modules/agents/useCases/ProcessAgentChatUseCase';
+import { requireAuth } from '@/lib/auth';
 
-// Chat routes must use nodejs runtime
 export const runtime = 'nodejs';
+
+// Dependency Injection
+const repository = new PrismaAgentRepository();
+const processAgentChatUseCase = new ProcessAgentChatUseCase(repository);
 
 export async function POST(
   request: Request,
@@ -12,55 +17,38 @@ export async function POST(
     const { agentId } = await params;
     const body = await request.json();
 
-    const agent = getDecryptedAgentById(agentId);
+    // Obtém a autenticação e o tenantId de forma segura via token do usuário
+    const { tenantId, userId, privyId } = await requireAuth(request);
 
-    if (!agent) {
-      return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
-    }
-
-    if (!agent.n8nWebhookUrl) {
-      return NextResponse.json(
-        { error: 'n8n Webhook URL is not configured for this agent' },
-        { status: 400 }
-      );
-    }
-
-    // Proxy the request to n8n
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    // Add Bearer token if provided by the user in the form
-    if (agent.n8nAuthToken) {
-      headers['Authorization'] = `Bearer ${agent.n8nAuthToken}`;
-    }
-
-    const n8nResponse = await fetch(agent.n8nWebhookUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        ...body,
-        _agentId: agent.id, // Inject context
-        _channel: body.channel || 'unknown'
-      }),
+    const result = await processAgentChatUseCase.execute({
+      agentId,
+      tenantId,
+      userId,
+      privyId,
+      payload: body,
     });
 
-    if (!n8nResponse.ok) {
-      console.error(`n8n responded with status ${n8nResponse.status}`);
+    return NextResponse.json(result, { status: 200 });
+  } catch (error: any) {
+    console.error('Error proxying chat to n8n:', error);
+    
+    // Tratamento de Erros de Quota / Paywall
+    if (error.message === 'TRIAL_EXPIRED' || error.message === 'QUOTA_EXCEEDED') {
+      // Devolve um 200 com mensagem amigável para o visitante no chat
       return NextResponse.json(
-        { error: 'Error communicating with n8n workflow' },
-        { status: 502 }
+        { response: 'O assistente encontra-se temporariamente indisponível devido aos limites do plano. Por favor, contacte o administrador.' },
+        { status: 200 } // Não lançamos 402 para o widget para evitar erros no frontend do visitante, mostramos apenas a mensagem
       );
     }
 
-    const n8nData = await n8nResponse.json();
+    let status = 500;
+    if (error.message === 'Agent not found') status = 404;
+    else if (error.message.includes('not configured')) status = 400;
+    else if (error.message.includes('Error communicating')) status = 502;
 
-    return NextResponse.json(n8nData, { status: 200 });
-  } catch (error) {
-    console.error('Error proxying chat to n8n:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
+      { error: error.message || 'Internal Server Error' },
+      { status }
     );
   }
 }

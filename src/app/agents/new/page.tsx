@@ -124,6 +124,26 @@ export default function NewAgent() {
                   <p className="text-sm text-gray-500">Informe os dados do seu fluxo n8n que irá processar as mensagens deste agente.</p>
                 </div>
 
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3 flex-1 md:flex md:justify-between">
+                      <p className="text-sm text-blue-700">
+                        A chave de API da Inteligência Artificial (OpenAI/Gemini) será injetada automaticamente neste agente a partir do seu <strong>Perfil</strong>.
+                      </p>
+                      <p className="mt-3 text-sm md:mt-0 md:ml-6">
+                        <Link href="/profile" className="whitespace-nowrap font-medium text-blue-700 hover:text-blue-600">
+                          Configurar Chave <span aria-hidden="true">&rarr;</span>
+                        </Link>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label htmlFor="n8nWebhookUrl" className="block text-sm font-medium text-gray-700">Webhook URL do n8n</label>
                   <input

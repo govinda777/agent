@@ -1,10 +1,11 @@
 'use client';
 
 import { PrivyProvider } from '@privy-io/react-auth';
+import { env } from '@/config/env';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   // Try using a format that looks like a real ID, e.g., 'cl...', or just use conditional rendering
-  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+  const appId = env.privyAppIdPublic;
 
   if (!appId) {
     // If we're building and don't have an ID, just render children to avoid build failures
@@ -15,7 +16,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <PrivyProvider
       appId={appId}
       config={{
-        loginMethods: ['email', 'wallet', 'google', 'apple'],
+        loginMethods: ['email'],
         appearance: {
           theme: 'light',
           accentColor: '#2563EB', // blue-600
