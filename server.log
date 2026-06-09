@@ -7,8 +7,8 @@
 - Network:       http://192.168.0.2:3000
 ✓ Ready in 553ms
 
-✓ Finished writing to filesystem cache in 11.7s
-○ Compiling /login ...
- HEAD /login 200 in 6.1s (next.js: 5.0s, application-code: 1024ms)
- GET /login 200 in 123ms (next.js: 10ms, application-code: 113ms)
+ HEAD /agents/new 200 in 1797ms (next.js: 388ms, application-code: 1409ms)
+ GET /agents/new 200 in 158ms (next.js: 8ms, application-code: 150ms)
+ POST /api/agents 201 in 1049ms (next.js: 1024ms, application-code: 25ms)
+ GET /?success=agent_created 200 in 191ms (next.js: 106ms, application-code: 85ms)
 [?25h
