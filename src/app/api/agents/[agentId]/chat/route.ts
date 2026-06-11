@@ -73,6 +73,10 @@ export async function POST(
             errorMessage = 'O assistente encontra-se temporariamente indisponível devido aos limites do plano. Por favor, contacte o administrador.';
           } else if (error.message === 'Agent not found') {
             errorMessage = 'Agente não encontrado.';
+          } else if (error.message.includes('Status: 404')) {
+            errorMessage = 'Erro 404: O n8n retornou que a URL do Webhook não existe. Por favor, verifique se a URL do Webhook está correta e se o fluxo do n8n está Ativado (Active) no painel do n8n.';
+          } else if (error.message.includes('fetch failed') || error.message.includes('ECONNREFUSED')) {
+            errorMessage = 'Erro de Conexão: Não foi possível conectar ao servidor n8n. Por favor, verifique se o serviço n8n está rodando localmente (execute `docker-compose up` no terminal).';
           }
           
           controller.enqueue(errorMessage);
