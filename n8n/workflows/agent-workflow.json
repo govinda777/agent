@@ -8,7 +8,7 @@
         "httpMethod": "POST",
         "path": "agent-webhook",
         "authentication": "none",
-        "responseMode": "lastNode",
+        "responseMode": "responseNode",
         "options": {}
       },
       "id": "ef2864a7-8f82-411a-8bb7-d86663f707f4",
@@ -23,7 +23,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "{\n  \"response\": \"Olá! Eu sou o seu agente configurado automaticamente no n8n local. Recebi sua mensagem: '{{ $json.body.message }}'. Como posso ajudar?\"\n}",
+        "responseBody": "={{ {\n  \"response\": \"Olá! Eu sou o seu agente configurado automaticamente no n8n local. Recebi sua mensagem: '\" + ($json.body.message || $json.body.mensagem || '') + \"'. Como posso ajudar?\"\n} }}",
         "options": {}
       },
       "id": "f5a706b8-62d1-4137-bcf0-7815cf1b37e8",

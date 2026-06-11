@@ -44,6 +44,15 @@ tasks:
       - docker compose exec -T n8n n8n publish:workflow --id=1
       - docker compose restart n8n
 
+  test:
+    desc: Executa a suíte completa de testes (integração e E2E) garantindo que a infraestrutura esteja pronta e saudável
+    deps: [db]
+    cmds:
+      - |
+        node -e "console.log('Aguardando n8n estar pronto para os testes...'); const check = () => fetch('http://localhost:5678/healthz').then(r => r.status === 200 ? setTimeout(() => { console.log('n8n pronto! Aguardando 5s para registro dos webhooks...'); setTimeout(() => process.exit(0), 5000); }, 1000) : setTimeout(check, 2000)).catch(() => setTimeout(check, 2000)); check();"
+      - npm run test:integration
+      - npm run test:e2e
+
   dev:
     desc: Inicia o servidor local do Next.js
     deps: [db]

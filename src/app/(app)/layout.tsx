@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy } from '@/modules/auth/client';
 import { Loader2 } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

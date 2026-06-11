@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { agentRepository, updateAgentUseCase } from '@/modules/agents/di';
-import { requireAuth } from '@/lib/auth';
+import { requireAuth } from '@/modules/auth/server';
 
 export async function GET(
   request: Request,

@@ -1,7 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
+import { defineBddConfig } from 'playwright-bdd';
+
+const testDir = defineBddConfig({
+  features: 'e2e/features/**/*.feature',
+  steps: 'e2e/steps/**/*.ts',
+});
 
 export default defineConfig({
-  testDir: './e2e',
+  testDir,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -22,5 +28,9 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 300 * 1000,
+    env: {
+      PLAYWRIGHT_TEST: 'true',
+      NEXT_PUBLIC_PLAYWRIGHT_TEST: 'true',
+    },
   },
 });

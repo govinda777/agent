@@ -5,12 +5,11 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: 'jsdom',
+    environment: 'node',
     setupFiles: ['./vitest.setup.ts'],
     globals: true,
-    reporters: ['default', ['html', { outputFile: './public/test-results/unit/index.html' }]],
-    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    exclude: ['e2e/**/*', 'node_modules/**/*', '.next/**/*', '**/*.n8n.integration.test.ts'],
+    reporters: ['default', ['html', { outputFile: './public/test-results/integration/index.html' }]],
+    include: ['src/**/*.n8n.integration.test.ts'],
     alias: {
       '@': path.resolve(__dirname, './src'),
     },

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Key, Server } from 'lucide-react';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy } from '@/modules/auth/client';
 
 export default function ProfilePage() {
   const { ready, authenticated, getAccessToken } = usePrivy();

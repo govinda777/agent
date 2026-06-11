@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy } from '@/modules/auth/client';
 
 export default function Login() {
   const { login, ready, authenticated } = usePrivy();

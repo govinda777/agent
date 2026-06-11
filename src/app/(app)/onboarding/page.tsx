@@ -20,7 +20,7 @@ import {
   ChevronRight,
   Settings
 } from 'lucide-react';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy } from '@/modules/auth/client';
 
 interface Agent {
   id: string;

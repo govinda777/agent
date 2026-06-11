@@ -9,8 +9,8 @@
     "lint": "eslint",
     "test:unit": "vitest run",
     "test:bench": "vitest bench --run",
-    "test:e2e": "playwright test",
-    "test:integration": "echo 'No integration tests yet' && exit 0",
+    "test:e2e": "npx bddgen && playwright test",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -22,6 +22,7 @@
     "ai": "^6.0.200",
     "lucide-react": "^1.17.0",
     "next": "16.2.7",
+    "pg": "^8.21.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "stripe": "^22.2.0"
@@ -40,6 +41,7 @@
     "eslint-config-next": "16.2.7",
     "husky": "^9.1.7",
     "jsdom": "^29.1.1",
+    "playwright-bdd": "^9.0.0",
     "prisma": "^5.21.0",
     "tailwindcss": "^4",
     "typescript": "^5",

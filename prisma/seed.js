@@ -69,7 +69,7 @@ async function main() {
     data: {
       name: agentName,
       n8nWebhookUrl: webhookUrl,
-      n8nAuthToken: encrypt('meu_token_secreto_n8n'),
+      n8nAuthToken: encrypt(process.env.N8N_AUTH_TOKEN || 'meu_token_secreto_n8n'),
       channelWeb: true,
       channelWhatsapp: false,
       channelInstagram: false,
