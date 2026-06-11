@@ -1,14 +1,20 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePrivy } from '@/modules/auth/client';
 import { Loader2 } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, ready, authenticated } = usePrivy();
+  const [isClient, setIsClient] = useState(false);
 
-  // Client-side authentication gate (fallback if middleware has delay or during dev)
-  if (!ready) {
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Show loading on server and initial client render to avoid hydration mismatch
+  if (!isClient || !ready) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -16,12 +22,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If ready but not authenticated, let middleware or client-side redirect handle it
-  if (!authenticated) {
-    if (typeof window !== 'undefined') {
+  // Client-side redirect if not authenticated
+  useEffect(() => {
+    if (!authenticated) {
       window.location.href = '/login';
     }
-    return null;
+  }, [authenticated]);
+
+  if (!authenticated) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
   }
 
   const userEmail = user?.email?.address || 'User';

@@ -1,0 +1,5 @@
+{
+  "*.{ts,tsx}": [
+    "node scripts/run-related-tests.js"
+  ]
+}

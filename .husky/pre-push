@@ -1,1 +1,2 @@
-npx task test
+# Run full unit test suite on push (fast, no infrastructure needed)
+npm run test:unit
