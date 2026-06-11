@@ -36,11 +36,13 @@ tasks:
       - task: import-workflow
 
   import-workflow:
-    desc: Importa o workflow padrão no n8n
+    desc: Importa e ativa o workflow padrão no n8n, depois reinicia para registrar os webhooks
     cmds:
       - |
         node -e "console.log('Aguardando inicializacao do n8n para importar o fluxo...'); const check = () => fetch('http://localhost:5678/healthz').then(r => r.status === 200 ? setTimeout(() => { console.log('n8n pronto! Aguardando 15s para garantir que as migracoes terminaram...'); setTimeout(() => process.exit(0), 15000); }, 1000) : setTimeout(check, 2000)).catch(() => setTimeout(check, 2000)); check();"
       - docker compose exec -T n8n n8n import:workflow --input /etc/n8n/agent-workflow.json
+      - docker compose exec -T n8n n8n publish:workflow --id=1
+      - docker compose restart n8n
 
   dev:
     desc: Inicia o servidor local do Next.js
