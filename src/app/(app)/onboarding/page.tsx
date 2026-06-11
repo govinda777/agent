@@ -179,6 +179,7 @@ export default function Dashboard() {
                   <button 
                     onClick={() => setActiveChatAgent(agent)}
                     className="inline-flex items-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-3.5 py-1.5 rounded-md transition-colors shadow-sm"
+                    data-testid={`agent-chat-button-${agent.id}`}
                   >
                     <MessageSquare className="w-4 h-4 mr-1.5" />
                     Falar

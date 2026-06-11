@@ -13,23 +13,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setIsClient(true);
   }, []);
 
-  // Show loading on server and initial client render to avoid hydration mismatch
-  if (!isClient || !ready) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
-  // Client-side redirect if not authenticated
   useEffect(() => {
-    if (!authenticated) {
+    if (isClient && ready && !authenticated) {
       window.location.href = '/login';
     }
-  }, [authenticated]);
+  }, [isClient, ready, authenticated]);
 
-  if (!authenticated) {
+  // Show loading on server and initial client render to avoid hydration mismatch
+  if (!isClient || !ready || !authenticated) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />

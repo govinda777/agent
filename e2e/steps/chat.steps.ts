@@ -77,7 +77,8 @@ When('o usuário navega para a página {string}', async ({ page }, url: string) 
 
 When('clica no botão {string} do agente {string}', async ({ page }, buttonText: string, agentName: string) => {
   const agentRow = page.locator('li', { hasText: agentName });
-  await agentRow.getByRole('button', { name: buttonText }).click();
+  // Find the chat button within the agent row
+  await agentRow.locator('[data-testid^="agent-chat-button-"]').click();
 });
 
 When('digita {string} no campo de mensagem', async ({ page }, message: string) => {
