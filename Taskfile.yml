@@ -1,0 +1,71 @@
+version: '3'
+
+tasks:
+  default:
+    desc: Roda o ambiente de desenvolvimento completo
+    cmds:
+      - task: dev
+
+  env:
+    desc: Prepara o arquivo .env
+    status:
+      - test -f .env
+    cmds:
+      - cp .env.example .env
+      - echo "" >> .env
+      - echo "# Banco de Dados Local" >> .env
+      - echo 'DATABASE_URL="postgresql://postgres:password@localhost:5432/agent1_db?schema=public"' >> .env
+
+  deps:
+    desc: Instala as dependências Node.js
+    cmds:
+      - npm install
+
+  infra:
+    desc: Sobe os containers Docker em background
+    cmds:
+      - docker compose up -d
+
+  db:
+    desc: Gera os clients do Prisma e aplica o schema no banco local
+    deps: [env, infra, deps]
+    cmds:
+      - npx prisma generate
+      - npx prisma db push
+      - npx prisma db seed
+      - task: import-workflow
+
+  import-workflow:
+    desc: Importa o workflow padrão no n8n
+    cmds:
+      - |
+        node -e "console.log('Aguardando inicializacao do n8n para importar o fluxo...'); const check = () => fetch('http://localhost:5678/healthz').then(r => r.status === 200 ? setTimeout(() => { console.log('n8n pronto! Aguardando 15s para garantir que as migracoes terminaram...'); setTimeout(() => process.exit(0), 15000); }, 1000) : setTimeout(check, 2000)).catch(() => setTimeout(check, 2000)); check();"
+      - docker compose exec -T n8n n8n import:workflow --input /etc/n8n/agent-workflow.json
+
+  dev:
+    desc: Inicia o servidor local do Next.js
+    deps: [db]
+    cmds:
+      - npm run dev
+
+  stop:
+    desc: Para os containers da infraestrutura local sem remover dados
+    cmds:
+      - docker compose stop
+
+  down:
+    desc: Para e remove os containers e redes locais da infraestrutura
+    cmds:
+      - docker compose down
+
+  clean:
+    desc: Remove os containers, redes, volumes (deleta banco de dados) e pasta de build do Next.js
+    cmds:
+      - docker compose down -v
+      - cmd /c "if exist .next rmdir /s /q .next"
+
+  reset:
+    desc: Limpa completamente a infraestrutura e reconstrói o ambiente local do zero
+    cmds:
+      - task: clean
+      - task: dev

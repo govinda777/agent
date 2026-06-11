@@ -3,16 +3,30 @@ import { env } from '@/config/env';
 
 const ALGORITHM = 'aes-256-gcm';
 
+// Cache for derived keys to prevent event-loop blocking from scryptSync
+const keyCache = new Map<string, Buffer>();
+
 /**
  * Derives a secure 32-byte key using scrypt, the global ENCRYPTION_KEY, and the user's privyId as salt.
+ * Uses an in-memory cache to avoid CPU bottleneck.
  */
 function deriveKey(privyId: string): Buffer {
   if (!env.encryptionKey) {
     throw new Error('ENCRYPTION_KEY is not defined in the environment.');
   }
-  // Use scrypt to derive a 32-byte key. We use privyId as the salt.
-  // This ensures that even if the ENCRYPTION_KEY leaks, an attacker needs the privyId to decrypt.
-  return crypto.scryptSync(env.encryptionKey, privyId, 32);
+  
+  let cachedKey = keyCache.get(privyId);
+  if (!cachedKey) {
+    // Use scrypt to derive a 32-byte key. We use privyId as the salt.
+    cachedKey = crypto.scryptSync(env.encryptionKey, privyId, 32);
+    // Limit cache size to prevent memory leaks in extreme cases
+    if (keyCache.size > 10000) {
+      keyCache.clear();
+    }
+    keyCache.set(privyId, cachedKey);
+  }
+  
+  return cachedKey;
 }
 
 export const CryptoService = {

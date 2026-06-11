@@ -5,7 +5,7 @@ Este roteiro atua como o checklist da infraestrutura necessária à máquina de 
 - [ ] **Passo 1: Orquestração em Contentores (Docker)**
   - [ ] Criar ficheiro base `docker-compose.yml` na raiz mapeando as portas padrão.
   - [ ] Adicionar o serviço PostgreSQL (versão correspondente ao Neon DB) mapeado para `5432`.
-  - [ ] Adicionar um ficheiro `.env.local` na raiz ignorado pelo GIT para guardar chaves locais (`DATABASE_URL="postgres://postgres:password@localhost:5432/govindadb"`).
+  - [ ] Adicionar um ficheiro `.env` na raiz ignorado pelo GIT para guardar chaves locais (`DATABASE_URL="postgres://postgres:password@localhost:5432/govindadb"`).
 
 - [ ] **Passo 2: Ferramentas de Linting & Qualidade Semântica**
   - [ ] Instalar o CommitLint e a configuração base (`npm install -D @commitlint/config-conventional @commitlint/cli`).

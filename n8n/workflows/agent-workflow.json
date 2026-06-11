@@ -1,0 +1,55 @@
+{
+  "id": "1",
+  "name": "Default Agent Workflow",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agent-webhook",
+        "authentication": "none",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "ef2864a7-8f82-411a-8bb7-d86663f707f4",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        350
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"response\": \"Olá! Eu sou o seu agente configurado automaticamente no n8n local. Recebi sua mensagem: '{{ $json.body.message }}'. Como posso ajudar?\"\n}",
+        "options": {}
+      },
+      "id": "f5a706b8-62d1-4137-bcf0-7815cf1b37e8",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        480,
+        350
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

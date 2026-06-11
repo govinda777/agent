@@ -125,4 +125,25 @@ export class PrismaAgentRepository implements IAgentRepository {
       data: { executionsUsed: { increment: 1 } }
     });
   }
+
+  async update(id: string, tenantId: string, agentData: Partial<Agent>): Promise<Agent> {
+    const updateData: any = {};
+    if (agentData.name !== undefined) updateData.name = agentData.name;
+    if (agentData.n8nWebhookUrl !== undefined) updateData.n8nWebhookUrl = agentData.n8nWebhookUrl;
+    if (agentData.n8nAuthToken !== undefined) {
+      updateData.n8nAuthToken = encrypt(agentData.n8nAuthToken);
+    }
+    
+    if (agentData.channels !== undefined) {
+      if (agentData.channels.web !== undefined) updateData.channelWeb = agentData.channels.web;
+      if (agentData.channels.whatsapp !== undefined) updateData.channelWhatsapp = agentData.channels.whatsapp;
+      if (agentData.channels.instagram !== undefined) updateData.channelInstagram = agentData.channels.instagram;
+    }
+
+    const updated = await prisma.agent.update({
+      where: { id, tenantId },
+      data: updateData
+    });
+    return this.mapToDomain(updated);
+  }
 }

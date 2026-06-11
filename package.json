@@ -8,15 +8,18 @@
     "start": "next start",
     "lint": "eslint",
     "test:unit": "vitest run",
+    "test:bench": "vitest bench --run",
     "test:e2e": "playwright test",
     "test:integration": "echo 'No integration tests yet' && exit 0",
     "prepare": "husky"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.202",
     "@prisma/client": "^5.21.0",
     "@privy-io/react-auth": "^3.29.2",
     "@privy-io/server-auth": "^1.32.5",
     "@stripe/stripe-js": "^9.8.0",
+    "ai": "^6.0.200",
     "lucide-react": "^1.17.0",
     "next": "16.2.7",
     "react": "19.2.4",
@@ -41,5 +44,8 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.8"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }

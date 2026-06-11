@@ -7,7 +7,7 @@ Este plano operacionaliza a criptografia em repouso e a segurança multilocatár
   - [ ] Garantir restrição `@@unique([tenantId, provider])`.
   - [ ] Executar migration (`npx prisma migrate dev`).
 - [ ] **Passo 2: Motor de Criptografia AES-GCM**
-  - [ ] Configurar variável `ENCRYPTION_MASTER_KEY` no `.env.local`.
+  - [ ] Configurar variável `ENCRYPTION_MASTER_KEY` no `.env`.
   - [ ] Criar o utilitário `src/lib/encryption.ts` importando `crypto`.
   - [ ] Implementar a função `encrypt(data: object)` que retorna o buffer cifrado + IV + AuthTag.
   - [ ] Implementar a função `decrypt(encryptedData)` que reconstrói a string em JSON.

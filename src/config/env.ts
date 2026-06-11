@@ -7,7 +7,7 @@ export const env = {
   freePlanChannels: process.env.NEXT_PUBLIC_FREE_PLAN_CHANNELS as string,
 
   // Private
-  privyAppId: process.env.PRIVY_APP_ID as string,
+  privyAppId: process.env.NEXT_PUBLIC_PRIVY_APP_ID as string,
   privyAppSecret: process.env.PRIVY_APP_SECRET as string,
   encryptionKey: process.env.ENCRYPTION_KEY as string,
   freePlanTrialDays: Number(process.env.FREE_PLAN_TRIAL_DAYS),

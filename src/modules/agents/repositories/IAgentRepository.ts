@@ -15,4 +15,5 @@ export interface IAgentRepository {
   } | null>;
   
   incrementExecutions(tenantId: string): Promise<void>;
+  update(id: string, tenantId: string, agentData: Partial<Agent>): Promise<Agent>;
 }

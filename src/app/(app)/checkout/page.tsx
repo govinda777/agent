@@ -46,7 +46,7 @@ export default function Checkout() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 items-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-3xl">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-extrabold text-gray-900">Finalizar Subscrição</h1>

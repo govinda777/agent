@@ -4,9 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { usePrivy } from '@privy-io/react-auth';
 
 export default function NewAgent() {
   const router = useRouter();
+  const { getAccessToken } = usePrivy();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,10 +48,12 @@ export default function NewAgent() {
     setError(null);
 
     try {
+      const token = await getAccessToken();
       const response = await fetch('/api/agents', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(formData),
       });

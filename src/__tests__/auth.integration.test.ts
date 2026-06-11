@@ -12,6 +12,7 @@ vi.mock('@/lib/prisma', () => ({
     },
     tenant: {
       create: vi.fn(),
+      findFirst: vi.fn(),
     },
     tenantUser: {
       create: vi.fn(),

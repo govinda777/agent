@@ -6,7 +6,7 @@ import { ArrowLeft, Loader2, Key, Server } from 'lucide-react';
 import { usePrivy } from '@privy-io/react-auth';
 
 export default function ProfilePage() {
-  const { ready, authenticated } = usePrivy();
+  const { ready, authenticated, getAccessToken } = usePrivy();
   const [llmProvider, setLlmProvider] = useState('');
   const [llmApiKey, setLlmApiKey] = useState('');
   const [hasApiKey, setHasApiKey] = useState(false);
@@ -24,7 +24,12 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/profile');
+      const token = await getAccessToken();
+      const response = await fetch('/api/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         if (data.llmProvider) setLlmProvider(data.llmProvider);
@@ -43,12 +48,16 @@ export default function ProfilePage() {
     setMessage(null);
 
     try {
+      const token = await getAccessToken();
       const response = await fetch('/api/profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           llmProvider: llmProvider || null,
-          llmApiKey: llmApiKey || null, // Se vazio, não sobrescreve a menos que a API limpe, mas por agora mandamos null para a API salvar caso queira limpar (nossa API encripta se existir)
+          llmApiKey: llmApiKey || null,
         }),
       });
 
@@ -66,7 +75,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (!ready || isLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -75,15 +84,13 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-12">
-      <header className="px-6 lg:px-8 h-16 flex items-center bg-white border-b border-gray-200">
-        <Link className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900" href="/agents">
-          <ArrowLeft className="mr-2 w-4 h-4" />
-          Voltar para Agentes
+    <div className="max-w-3xl mx-auto mt-10 px-4 sm:px-6 pb-12">
+      <div className="mb-6">
+        <Link className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500" href="/onboarding">
+          <ArrowLeft className="mr-1 w-4 h-4" />
+          Voltar para Painel
         </Link>
-      </header>
-
-      <main className="max-w-3xl mx-auto mt-10 px-4 sm:px-6">
+      </div>
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Meu Perfil e Configurações</h1>
           <p className="mt-2 text-gray-600">Configure as chaves globais que serão utilizadas pelos seus agentes de IA.</p>
@@ -159,7 +166,6 @@ export default function ProfilePage() {
             </form>
           </div>
         </div>
-      </main>
     </div>
   );
 }

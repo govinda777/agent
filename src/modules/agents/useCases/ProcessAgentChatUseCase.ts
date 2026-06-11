@@ -46,7 +46,7 @@ export class ProcessAgentChatUseCase {
     };
 
     if (agent.n8nAuthToken) {
-      headers['Authorization'] = `Bearer ${agent.n8nAuthToken}`;
+      headers['X-API-KEY'] = agent.n8nAuthToken;
     }
 
     // Fetch User to get LLM keys

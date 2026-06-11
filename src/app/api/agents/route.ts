@@ -1,13 +1,6 @@
 import { NextResponse } from 'next/server';
-import { PrismaAgentRepository } from '@/modules/agents/infrastructure/PrismaAgentRepository';
-import { CreateAgentUseCase } from '@/modules/agents/useCases/CreateAgentUseCase';
-import { GetAgentsUseCase } from '@/modules/agents/useCases/GetAgentsUseCase';
+import { createAgentUseCase, getAgentsUseCase } from '@/modules/agents/di';
 import { requireAuth } from '@/lib/auth';
-
-// Dependency Injection
-const repository = new PrismaAgentRepository();
-const createAgentUseCase = new CreateAgentUseCase(repository);
-const getAgentsUseCase = new GetAgentsUseCase(repository);
 
 export async function POST(request: Request) {
   try {

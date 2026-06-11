@@ -1,20 +1,37 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+## 🚀 Rodando o Projeto Localmente
 
-First, run the development server:
+O projeto utiliza o **Taskfile** (`go-task`) para simplificar e automatizar o setup do ambiente. O Taskfile orquestra a criação do arquivo `.env`, sobe o Docker Compose (banco de dados, n8n, mocks), instala dependências e inicia o Next.js com um único comando.
+
+### 1. Pré-requisitos
+Antes de começar, certifique-se de que tem instalado na sua máquina:
+- **[Node.js](https://nodejs.org/en/)** (recomendado usar a versão LTS)
+- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** ou Docker rodando
+- **[Task](https://taskfile.dev/installation/)** (Instale executando `npm install -g @go-task/cli` ou siga o [guia de instalação oficial](https://taskfile.dev/installation/))
+
+### 2. Iniciando o ambiente
+
+No terminal da raiz do projeto, execute:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+task dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Este comando irá automaticamente:
+1. Copiar o `.env.example` para `.env` e adicionar a `DATABASE_URL` local.
+2. Baixar as dependências do `npm`.
+3. Iniciar a infraestrutura via `docker compose up -d`.
+4. Rodar as migrações/criações de tabelas através do `prisma db push`.
+5. Subir o servidor de desenvolvimento Next.js.
+
+Abra [http://localhost:3000](http://localhost:3000) no seu navegador para ver o resultado!
+
+### Outros comandos disponíveis
+Se quiser rodar os passos individualmente, você pode usar:
+- `task infra`: Para subir apenas os containers do Docker.
+- `task db`: Para forçar a execução das migrações do banco.
+- `task --list`: Para ver todas as tarefas disponíveis.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

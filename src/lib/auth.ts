@@ -24,23 +24,42 @@ export async function requireAuth(request: Request) {
   });
 
   if (!user) {
-    // Primeiro login do usuário - criar User e um Tenant inicial para ele como OWNER
-    user = await prisma.user.create({
-      data: {
-        privyId,
-        tenants: {
-          create: {
-            role: 'OWNER',
-            tenant: {
-              create: {
-                trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
-              }
-            }
-          }
-        }
-      },
-      include: { tenants: { include: { tenant: true } } }
-    });
+    // Busca se já existe algum Tenant no banco (ex: criado via seed)
+    const existingTenant = await prisma.tenant.findFirst();
+
+    if (existingTenant) {
+      // Associa o novo usuário ao Tenant existente como OWNER
+      user = await prisma.user.create({
+        data: {
+          privyId,
+          tenants: {
+            create: {
+              tenantId: existingTenant.id,
+              role: 'OWNER',
+            },
+          },
+        },
+        include: { tenants: { include: { tenant: true } } },
+      });
+    } else {
+      // Primeiro login do usuário (sem seed) - criar User e um Tenant inicial para ele como OWNER
+      user = await prisma.user.create({
+        data: {
+          privyId,
+          tenants: {
+            create: {
+              role: 'OWNER',
+              tenant: {
+                create: {
+                  trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
+                },
+              },
+            },
+          },
+        },
+        include: { tenants: { include: { tenant: true } } },
+      });
+    }
   } else if (user.tenants.length === 0) {
     // User exists but has no tenant somehow, create one
     const newTenant = await prisma.tenant.create({

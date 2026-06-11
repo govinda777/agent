@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # Banco de Dados Principal (PostgreSQL) para o Prisma
+  postgres:
+    image: postgres:15-alpine
+    container_name: agent1-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: agent1_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agent1_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Banco de Dados para o n8n
+  n8n-postgres:
+    image: postgres:15-alpine
+    container_name: agent1-n8n-postgres
+    environment:
+      POSTGRES_USER: n8n_user
+      POSTGRES_PASSWORD: n8n_password
+      POSTGRES_DB: n8n_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - n8n_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U n8n_user -d n8n_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # n8n - Para mock/desenvolvimento dos fluxos dos Agentes localmente
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: agent1-n8n
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=n8n-postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n_db
+      - DB_POSTGRESDB_USER=n8n_user
+      - DB_POSTGRESDB_PASSWORD=n8n_password
+      - N8N_BASIC_AUTH_ACTIVE=false
+      - WEBHOOK_URL=http://localhost:5678/
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows/agent-workflow.json:/etc/n8n/agent-workflow.json:ro
+    depends_on:
+      n8n-postgres:
+        condition: service_healthy
+
+  # Stripe Mock - Para simular API de pagamentos localmente
+  stripe-mock:
+    image: stripemock/stripe-mock:latest
+    container_name: agent1-stripe-mock
+    ports:
+      - "12111:12111"  # HTTP
+      - "12112:12112"  # HTTPS
+
+volumes:
+  postgres_data:
+  n8n_postgres_data:
+  n8n_data:
