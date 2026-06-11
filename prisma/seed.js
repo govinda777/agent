@@ -55,7 +55,7 @@ async function main() {
 
   // 2. Criar ou atualizar Agente Padrão vinculado ao n8n local
   const agentName = 'Agente n8n Padrão';
-  const webhookUrl = 'http://localhost:5678/webhook/agent-webhook';
+  const webhookUrl = 'http://localhost:5678/webhook/1/webhook/agent-webhook';
   
   // Limpar agentes padrão anteriores se existirem para evitar duplicados no dev
   await prisma.agent.deleteMany({
