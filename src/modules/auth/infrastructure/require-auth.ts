@@ -1,5 +1,5 @@
-import { privy } from './privy';
-import { prisma } from './prisma';
+import { tokenVerifier } from '../di';
+import { prisma } from '@/lib/prisma';
 
 export async function requireAuth(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -11,8 +11,7 @@ export async function requireAuth(request: Request) {
   let privyId: string;
 
   try {
-    const verifiedClaims = await privy.verifyAuthToken(token);
-    privyId = verifiedClaims.userId;
+    privyId = await tokenVerifier.verifyToken(token);
   } catch (error) {
     throw new Error('Invalid or expired token');
   }
@@ -24,11 +23,9 @@ export async function requireAuth(request: Request) {
   });
 
   if (!user) {
-    // Busca se já existe algum Tenant no banco (ex: criado via seed)
     const existingTenant = await prisma.tenant.findFirst();
 
     if (existingTenant) {
-      // Associa o novo usuário ao Tenant existente como OWNER
       user = await prisma.user.create({
         data: {
           privyId,
@@ -42,7 +39,6 @@ export async function requireAuth(request: Request) {
         include: { tenants: { include: { tenant: true } } },
       });
     } else {
-      // Primeiro login do usuário (sem seed) - criar User e um Tenant inicial para ele como OWNER
       user = await prisma.user.create({
         data: {
           privyId,
@@ -61,7 +57,6 @@ export async function requireAuth(request: Request) {
       });
     }
   } else if (user.tenants.length === 0) {
-    // User exists but has no tenant somehow, create one
     const newTenant = await prisma.tenant.create({
       data: {
         trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
@@ -80,14 +75,11 @@ export async function requireAuth(request: Request) {
     }) as any;
   }
 
-  // By default, return the user's first tenant. 
-  // In a real B2B app, the client might pass `x-tenant-id` header to specify which tenant they are acting as.
   if (!user) {
     throw new Error('User not found or created successfully');
   }
 
   const requestedTenantId = request.headers.get('x-tenant-id');
-  
   let activeTenantId = user.tenants[0].tenantId;
 
   if (requestedTenantId) {

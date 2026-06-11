@@ -1,30 +1,18 @@
 'use client';
 
-import { PrivyProvider } from '@privy-io/react-auth';
-import { env } from '@/config/env';
+import React from 'react';
+import { RealAuthProvider } from '@/modules/auth/providers/RealAuthProvider';
+import { MockAuthProvider } from '@/modules/auth/providers/MockAuthProvider';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  // Try using a format that looks like a real ID, e.g., 'cl...', or just use conditional rendering
-  const appId = env.privyAppIdPublic;
+  const isE2E =
+    typeof window !== 'undefined' &&
+    (window.localStorage.getItem('playwright-mock-auth') === 'true' ||
+     process.env.NEXT_PUBLIC_PLAYWRIGHT_TEST === 'true');
 
-  if (!appId) {
-    // If we're building and don't have an ID, just render children to avoid build failures
-    return <>{children}</>;
+  if (isE2E) {
+    return <MockAuthProvider>{children}</MockAuthProvider>;
   }
 
-  return (
-    <PrivyProvider
-      appId={appId}
-      config={{
-        loginMethods: ['email'],
-        appearance: {
-          theme: 'light',
-          accentColor: '#2563EB', // blue-600
-          logo: 'https://placehold.co/400x100?text=Govinda+Systems',
-        },
-      }}
-    >
-      {children}
-    </PrivyProvider>
-  );
+  return <RealAuthProvider>{children}</RealAuthProvider>;
 }

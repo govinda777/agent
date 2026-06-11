@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { privy } from '@/lib/privy';
 
 // Mock dependências externas
 vi.mock('@/lib/prisma', () => ({
@@ -20,11 +18,15 @@ vi.mock('@/lib/prisma', () => ({
   }
 }));
 
-vi.mock('@/lib/privy', () => ({
-  privy: {
-    verifyAuthToken: vi.fn(),
+// Mock tokenVerifier antes de importar requireAuth
+vi.mock('@/modules/auth/di', () => ({
+  tokenVerifier: {
+    verifyToken: vi.fn(),
   }
 }));
+
+// Import after mock
+const { requireAuth, tokenVerifier } = await import('@/modules/auth/server');
 
 describe('Auth Middleware (requireAuth)', () => {
   beforeEach(() => {
@@ -41,7 +43,7 @@ describe('Auth Middleware (requireAuth)', () => {
       headers: new Headers({ 'authorization': 'Bearer valid-token' })
     });
 
-    (privy.verifyAuthToken as any).mockResolvedValue({ userId: 'did:privy:newuser' });
+    (tokenVerifier.verifyToken as any).mockResolvedValue('did:privy:newuser');
     
     // Simula usuário não existente
     (prisma.user.findUnique as any).mockResolvedValue(null);
@@ -69,7 +71,7 @@ describe('Auth Middleware (requireAuth)', () => {
       headers: new Headers({ 'authorization': 'Bearer valid-token' })
     });
 
-    (privy.verifyAuthToken as any).mockResolvedValue({ userId: 'did:privy:existing' });
+    (tokenVerifier.verifyToken as any).mockResolvedValue('did:privy:existing');
     
     // Simula usuário existente com tenant
     (prisma.user.findUnique as any).mockResolvedValue({

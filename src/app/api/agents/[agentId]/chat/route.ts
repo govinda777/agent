@@ -1,6 +1,6 @@
 import { createTextStreamResponse } from 'ai';
 import { processAgentChatUseCase } from '@/modules/agents/di';
-import { requireAuth } from '@/lib/auth';
+import { requireAuth } from '@/modules/auth/server';
 
 export const runtime = 'nodejs';
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAgentUseCase, getAgentsUseCase } from '@/modules/agents/di';
-import { requireAuth } from '@/lib/auth';
+import { requireAuth } from '@/modules/auth/server';
 
 export async function POST(request: Request) {
   try {

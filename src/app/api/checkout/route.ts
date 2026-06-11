@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ProcessCheckoutUseCase } from '@/modules/checkout/useCases/ProcessCheckoutUseCase';
-import { requireAuth } from '@/lib/auth';
+import { requireAuth } from '@/modules/auth/server';
 import { env } from '@/config/env';
 
 const processCheckoutUseCase = new ProcessCheckoutUseCase();
