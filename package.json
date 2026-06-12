@@ -1,12 +1,13 @@
 {
-  "name": "temp-app",
+  "name": "agent-core",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --turbo",
+    "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,json}\"",
     "test:unit": "vitest run",
     "test:bench": "vitest bench --run",
     "test:e2e": "npx bddgen && playwright test",

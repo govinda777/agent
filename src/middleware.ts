@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const token = request.cookies.get('privy-token');
   const { pathname } = request.nextUrl;
 
   // Roteamento de proteção de rotas privadas (Área Logada)
-  const isProtectedRoute = 
+  const isProtectedRoute =
     pathname.startsWith('/onboarding') ||
     pathname.startsWith('/profile') ||
     pathname.startsWith('/checkout') ||

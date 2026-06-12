@@ -5,20 +5,20 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useChat } from '@ai-sdk/react';
 import { TextStreamChatTransport } from 'ai';
-import { 
-  Bot, 
-  Zap, 
-  Plus, 
-  X, 
-  Send, 
-  User, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  RefreshCw, 
+import {
+  Bot,
+  Zap,
+  Plus,
+  X,
+  Send,
+  User,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
   MessageSquare,
   ChevronRight,
-  Settings
+  Settings,
 } from 'lucide-react';
 import { usePrivy } from '@/modules/auth/client';
 
@@ -37,7 +37,7 @@ export default function Dashboard() {
   const { getAccessToken } = usePrivy();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Drawer States
   const [activeChatAgent, setActiveChatAgent] = useState<Agent | null>(null);
   const [activeLogsAgent, setActiveLogsAgent] = useState<Agent | null>(null);
@@ -49,11 +49,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (success === 'agent_created') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSuccessMessage('Agente criado com sucesso!');
     } else if (success === 'agent_updated') {
       setSuccessMessage('Agente atualizado com sucesso!');
     }
-    
+
     if (success) {
       const timer = setTimeout(() => {
         setSuccessMessage(null);
@@ -69,8 +70,8 @@ export default function Dashboard() {
         const token = await getAccessToken();
         const response = await fetch('/api/agents', {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
         if (response.ok) {
           const data = await response.json();
@@ -116,10 +117,16 @@ export default function Dashboard() {
           <Zap className="w-5 h-5 text-amber-500 mt-0.5 sm:mt-0 mr-3 shrink-0" />
           <div>
             <h3 className="font-semibold text-amber-900">Plano Gratuito (7 dias restantes)</h3>
-            <p className="text-sm text-amber-700">Tem acesso a 1 agente, 1.000 tokens e 1.000 execuções. Para limites ilimitados, faça upgrade.</p>
+            <p className="text-sm text-amber-700">
+              Tem acesso a 1 agente, 1.000 tokens e 1.000 execuções. Para limites ilimitados, faça
+              upgrade.
+            </p>
           </div>
         </div>
-        <Link href="/checkout" className="text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 px-4 py-2 rounded-md self-start sm:self-auto transition-colors shadow-sm">
+        <Link
+          href="/checkout"
+          className="text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 px-4 py-2 rounded-md self-start sm:self-auto transition-colors shadow-sm"
+        >
           Fazer Upgrade Agora
         </Link>
       </div>
@@ -142,7 +149,8 @@ export default function Dashboard() {
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum agente criado</h3>
             <p className="text-gray-500 mb-6 max-w-md">
-              Ainda não tem agentes configurados. Crie o seu primeiro agente para começar a automatizar o seu atendimento.
+              Ainda não tem agentes configurados. Crie o seu primeiro agente para começar a
+              automatizar o seu atendimento.
             </p>
             <Link
               href="/agents/new"
@@ -154,7 +162,10 @@ export default function Dashboard() {
         ) : (
           <ul className="divide-y divide-gray-200">
             {agents.map((agent) => (
-              <li key={agent.id} className="p-6 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <li
+                key={agent.id}
+                className="p-6 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              >
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mr-4 shrink-0">
                     <Bot className="w-6 h-6" />
@@ -166,17 +177,29 @@ export default function Dashboard() {
                         Criado a {new Date(agent.createdAt).toLocaleDateString()}
                       </span>
                       <div className="flex gap-1">
-                        {agent.channels.web && <span className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Web</span>}
-                        {agent.channels.whatsapp && <span className="bg-green-50 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">WhatsApp</span>}
-                        {agent.channels.instagram && <span className="bg-purple-50 text-purple-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Instagram</span>}
+                        {agent.channels.web && (
+                          <span className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                            Web
+                          </span>
+                        )}
+                        {agent.channels.whatsapp && (
+                          <span className="bg-green-50 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                            WhatsApp
+                          </span>
+                        )}
+                        {agent.channels.instagram && (
+                          <span className="bg-purple-50 text-purple-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                            Instagram
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3 self-end sm:self-auto">
                   {/* Falar / Chat Button */}
-                  <button 
+                  <button
                     onClick={() => setActiveChatAgent(agent)}
                     className="inline-flex items-center text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-3.5 py-1.5 rounded-md transition-colors shadow-sm"
                     data-testid={`agent-chat-button-${agent.id}`}
@@ -186,7 +209,7 @@ export default function Dashboard() {
                   </button>
 
                   {/* Ver Logs Button */}
-                  <button 
+                  <button
                     onClick={() => setActiveLogsAgent(agent)}
                     className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-all"
                   >
@@ -194,7 +217,7 @@ export default function Dashboard() {
                   </button>
 
                   {/* Editar Link */}
-                  <Link 
+                  <Link
                     href={`/agents/${agent.id}/edit`}
                     className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-200 px-3 py-1.5 rounded-md bg-white hover:bg-gray-50 transition-colors"
                   >
@@ -220,11 +243,52 @@ export default function Dashboard() {
 }
 
 // ==========================================
+// TYPEWRITER EFFECT COMPONENT
+// ==========================================
+function TypewriterText({
+  text,
+  speed = 10,
+  onUpdate,
+  onComplete,
+}: {
+  text: string;
+  speed?: number;
+  onUpdate?: () => void;
+  onComplete?: () => void;
+}) {
+  const [displayedText, setDisplayedText] = useState('');
+
+  useEffect(() => {
+    if (!text) return;
+
+    let currentText = '';
+    let i = 0;
+
+    const timer = setInterval(() => {
+      if (i < text.length) {
+        currentText += text.charAt(i);
+        setDisplayedText(currentText);
+        i++;
+        onUpdate?.();
+      } else {
+        clearInterval(timer);
+        onComplete?.();
+      }
+    }, speed);
+
+    return () => clearInterval(timer);
+  }, [text, speed, onUpdate, onComplete]);
+
+  return <p className="leading-relaxed whitespace-pre-wrap">{displayedText}</p>;
+}
+
+// ==========================================
 // CHAT DRAWER COMPONENT (Vercel AI SDK)
 // ==========================================
 function ChatDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   const { getAccessToken } = usePrivy();
   const [chatInput, setChatInput] = useState('');
+  const [completedMessageIds, setCompletedMessageIds] = useState<Record<string, boolean>>({});
 
   const { messages, sendMessage, status } = useChat({
     transport: new TextStreamChatTransport({
@@ -232,7 +296,7 @@ function ChatDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
       headers: async () => {
         const token = await getAccessToken();
         return {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         };
       },
     }),
@@ -259,15 +323,14 @@ function ChatDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
         onClick={onClose}
       />
-      
+
       {/* Panel */}
       <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
         <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col h-full transform transition-transform duration-300 ease-in-out border-l border-gray-200">
-          
           {/* Header */}
           <div className="px-6 py-5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -282,7 +345,7 @@ function ChatDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
                 </span>
               </div>
             </div>
-            <button 
+            <button
               onClick={onClose}
               className="rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 p-2 transition-colors shrink-0"
             >
@@ -299,39 +362,66 @@ function ChatDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
                 </div>
                 <h4 className="font-semibold text-gray-900">Fale com seu Agente</h4>
                 <p className="text-xs text-gray-500 max-w-xs mt-1 leading-relaxed">
-                  Envie uma mensagem abaixo para testar o comportamento do seu agente conectado ao fluxo n8n.
+                  Envie uma mensagem abaixo para testar o comportamento do seu agente conectado ao
+                  fluxo n8n.
                 </p>
               </div>
             ) : (
               messages.map((message) => {
                 const isUser = message.role === 'user';
+                const messageText = message.parts
+                  ? message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('')
+                  : (message as { content?: string }).content || '';
+
+                const isCompleted = completedMessageIds[message.id];
+                const isLatestAssistant =
+                  !isUser && message.id === messages[messages.length - 1]?.id;
+
                 return (
-                  <div key={message.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`flex gap-2 max-w-[85%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
-                        isUser 
-                          ? 'bg-blue-600 text-white shadow-sm' 
-                          : 'bg-white border border-gray-200 text-gray-600 shadow-sm'
-                      }`}>
+                  <div
+                    key={message.id}
+                    className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`flex gap-2 max-w-[85%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
+                          isUser
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'bg-white border border-gray-200 text-gray-600 shadow-sm'
+                        }`}
+                      >
                         {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                       </div>
-                      <div className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
-                        isUser 
-                          ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-tr-none' 
-                          : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
-                      }`}>
-                        <p className="leading-relaxed whitespace-pre-wrap">
-                          {message.parts
-                            .map((part) => (part.type === 'text' ? part.text : ''))
-                            .join('')}
-                        </p>
+                      <div
+                        className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
+                          isUser
+                            ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-tr-none'
+                            : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
+                        }`}
+                      >
+                        {isLatestAssistant && !isCompleted ? (
+                          <TypewriterText
+                            text={messageText}
+                            speed={8}
+                            onUpdate={() =>
+                              messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+                            }
+                            onComplete={() =>
+                              setCompletedMessageIds((prev) => ({ ...prev, [message.id]: true }))
+                            }
+                          />
+                        ) : (
+                          <p className="leading-relaxed whitespace-pre-wrap">{messageText}</p>
+                        )}
                       </div>
                     </div>
                   </div>
                 );
               })
             )}
-            
+
             {isLoading && (
               <div className="flex justify-start">
                 <div className="flex gap-2 items-center">
@@ -346,12 +436,12 @@ function ChatDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
                 </div>
               </div>
             )}
-            
+
             <div ref={messagesEndRef} />
           </div>
 
           {/* Form */}
-          <form 
+          <form
             onSubmit={handleSubmit}
             className="p-4 border-t border-gray-100 bg-white flex items-center gap-2"
           >
@@ -370,7 +460,6 @@ function ChatDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
               <Send className="w-4 h-4" />
             </button>
           </form>
-
         </div>
       </div>
     </div>
@@ -387,7 +476,7 @@ function LogsDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   const [logs, setLogs] = useState([
     {
       id: 'run_a8f92b',
-      timestamp: new Date(Date.now() - 5 * 60000).toLocaleString('pt-PT'),
+      timestamp: 'Há 5 minutos',
       channel: 'Web',
       status: 'success',
       responseTime: '1.2s',
@@ -395,7 +484,7 @@ function LogsDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
     },
     {
       id: 'run_c92e7d',
-      timestamp: new Date(Date.now() - 32 * 60000).toLocaleString('pt-PT'),
+      timestamp: 'Há 32 minutos',
       channel: 'Web',
       status: 'success',
       responseTime: '1.5s',
@@ -403,7 +492,7 @@ function LogsDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
     },
     {
       id: 'run_b10f8a',
-      timestamp: new Date(Date.now() - 120 * 60000).toLocaleString('pt-PT'),
+      timestamp: 'Há 2 horas',
       channel: 'Web',
       status: 'error',
       responseTime: '0.8s',
@@ -412,12 +501,12 @@ function LogsDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
     },
     {
       id: 'run_d58e3c',
-      timestamp: new Date(Date.now() - 240 * 60000).toLocaleString('pt-PT'),
+      timestamp: 'Há 4 horas',
       channel: 'Web',
       status: 'success',
       responseTime: '1.4s',
       tokensUsed: 512,
-    }
+    },
   ]);
 
   const handleRefresh = () => {
@@ -430,9 +519,11 @@ function LogsDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
         status: Math.random() > 0.15 ? 'success' : 'error',
         responseTime: (1.0 + Math.random() * 0.8).toFixed(1) + 's',
         tokensUsed: Math.floor(250 + Math.random() * 300),
-        ...(Math.random() > 0.85 ? { errorMessage: 'n8n Workflow Internal Server Error (500)' } : {})
+        ...(Math.random() > 0.85
+          ? { errorMessage: 'n8n Workflow Internal Server Error (500)' }
+          : {}),
       };
-      setLogs(prev => [newLog, ...prev]);
+      setLogs((prev) => [newLog, ...prev]);
       setIsRefreshing(false);
     }, 800);
   };
@@ -440,15 +531,14 @@ function LogsDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
         onClick={onClose}
       />
-      
+
       {/* Panel */}
       <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
         <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col h-full transform transition-transform duration-300 ease-in-out border-l border-gray-200">
-          
           {/* Header */}
           <div className="px-6 py-5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -463,7 +553,7 @@ function LogsDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
-              <button 
+              <button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
                 className="rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-2 transition-colors disabled:opacity-50"
@@ -471,7 +561,7 @@ function LogsDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
               >
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
-              <button 
+              <button
                 onClick={onClose}
                 className="rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 p-2 transition-colors"
               >
@@ -484,21 +574,33 @@ function LogsDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
           <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50 space-y-4">
             <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex items-center justify-between">
               <div>
-                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Total de Chamadas</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">
+                  Total de Chamadas
+                </span>
                 <h4 className="text-2xl font-bold text-gray-900 mt-0.5">{logs.length}</h4>
               </div>
               <div className="text-right">
-                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Taxa de Sucesso</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">
+                  Taxa de Sucesso
+                </span>
                 <h4 className="text-2xl font-bold text-green-600 mt-0.5">
-                  {Math.round((logs.filter(l => l.status === 'success').length / logs.length) * 100)}%
+                  {Math.round(
+                    (logs.filter((l) => l.status === 'success').length / logs.length) * 100
+                  )}
+                  %
                 </h4>
               </div>
             </div>
 
-            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Logs de Execução Recentes</h4>
+            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+              Logs de Execução Recentes
+            </h4>
             <div className="space-y-3">
               {logs.map((log) => (
-                <div key={log.id} className="bg-white border border-gray-200/60 rounded-xl p-4 shadow-sm hover:border-gray-300 transition-all">
+                <div
+                  key={log.id}
+                  className="bg-white border border-gray-200/60 rounded-xl p-4 shadow-sm hover:border-gray-300 transition-all"
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-mono font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
@@ -508,9 +610,11 @@ function LogsDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
                         {log.channel}
                       </span>
                     </div>
-                    <span className={`flex items-center gap-1 text-xs font-bold ${
-                      log.status === 'success' ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <span
+                      className={`flex items-center gap-1 text-xs font-bold ${
+                        log.status === 'success' ? 'text-green-600' : 'text-red-600'
+                      }`}
+                    >
                       {log.status === 'success' ? (
                         <>
                           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -524,7 +628,7 @@ function LogsDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
                       )}
                     </span>
                   </div>
-                  
+
                   {log.status === 'error' && log.errorMessage && (
                     <div className="mt-2 text-[11px] text-red-700 bg-red-50 border border-red-100 rounded p-2 font-semibold">
                       Erro: {log.errorMessage}
@@ -537,9 +641,15 @@ function LogsDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
                       <span>{log.timestamp}</span>
                     </div>
                     <div className="flex gap-3">
-                      <span>Tempo: <strong className="text-gray-700 font-semibold">{log.responseTime}</strong></span>
+                      <span>
+                        Tempo:{' '}
+                        <strong className="text-gray-700 font-semibold">{log.responseTime}</strong>
+                      </span>
                       {log.tokensUsed > 0 && (
-                        <span>Tokens: <strong className="text-gray-700 font-semibold">{log.tokensUsed}</strong></span>
+                        <span>
+                          Tokens:{' '}
+                          <strong className="text-gray-700 font-semibold">{log.tokensUsed}</strong>
+                        </span>
                       )}
                     </div>
                   </div>

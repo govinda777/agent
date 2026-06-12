@@ -1,5 +1,5 @@
 import { Agent } from '../domain/Agent';
-import { IAgentRepository } from '../repositories/IAgentRepository';
+import { AgentRepository } from '../domain/repositories/AgentRepository';
 import { env } from '@/config/env';
 
 export interface CreateAgentDTO {
@@ -15,7 +15,7 @@ export interface CreateAgentDTO {
 }
 
 export class CreateAgentUseCase {
-  constructor(private agentRepository: IAgentRepository) {}
+  constructor(private agentRepository: AgentRepository) {}
 
   async execute(data: CreateAgentDTO): Promise<Agent> {
     if (!data.name || !data.n8nWebhookUrl) {
@@ -24,7 +24,7 @@ export class CreateAgentUseCase {
 
     // Tenant Limits Check
     const tenantDetails = await this.agentRepository.getTenantDetails(data.tenantId);
-    
+
     if (tenantDetails && tenantDetails.status === 'FREE') {
       const maxAgents = env.freePlanMaxAgents;
       if (tenantDetails.agentsCount >= maxAgents) {
@@ -34,7 +34,7 @@ export class CreateAgentUseCase {
       // Enforce Free Plan allowed channels (e.g. only web)
       const allowedChannelsEnv = env.freePlanChannels;
       const allowedChannels = allowedChannelsEnv.split(',');
-      
+
       if (data.channels) {
         if (data.channels.whatsapp && !allowedChannels.includes('whatsapp')) {
           data.channels.whatsapp = false; // Block
@@ -49,7 +49,7 @@ export class CreateAgentUseCase {
       name: data.name,
       n8nWebhookUrl: data.n8nWebhookUrl,
       n8nAuthToken: data.n8nAuthToken || '',
-      channels: data.channels || { web: false, whatsapp: false, instagram: false }
+      channels: data.channels || { web: false, whatsapp: false, instagram: false },
     };
 
     return this.agentRepository.save(data.tenantId, agentData);

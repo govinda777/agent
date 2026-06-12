@@ -1,5 +1,5 @@
 import { Agent } from '../domain/Agent';
-import { IAgentRepository } from '../repositories/IAgentRepository';
+import { AgentRepository } from '../domain/repositories/AgentRepository';
 import { env } from '@/config/env';
 
 export interface UpdateAgentDTO {
@@ -16,7 +16,7 @@ export interface UpdateAgentDTO {
 }
 
 export class UpdateAgentUseCase {
-  constructor(private agentRepository: IAgentRepository) {}
+  constructor(private agentRepository: AgentRepository) {}
 
   async execute(data: UpdateAgentDTO): Promise<Agent> {
     if (data.name !== undefined && !data.name) {
@@ -28,12 +28,12 @@ export class UpdateAgentUseCase {
 
     // Tenant Limits Check
     const tenantDetails = await this.agentRepository.getTenantDetails(data.tenantId);
-    
+
     if (tenantDetails && tenantDetails.status === 'FREE' && data.channels) {
       // Enforce Free Plan allowed channels (e.g. only web)
       const allowedChannelsEnv = env.freePlanChannels;
       const allowedChannels = allowedChannelsEnv.split(',');
-      
+
       if (data.channels.whatsapp && !allowedChannels.includes('whatsapp')) {
         data.channels.whatsapp = false; // Block
       }

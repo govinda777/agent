@@ -1,5 +1,4 @@
 {
-  "*.{ts,tsx}": [
-    "node scripts/run-related-tests.js"
-  ]
+  "*.{ts,tsx}": ["npx prettier --write", "npx eslint --fix", "node scripts/run-related-tests.js"],
+  "*.{js,json,md}": ["npx prettier --write"]
 }
