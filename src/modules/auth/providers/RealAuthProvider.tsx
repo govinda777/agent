@@ -27,7 +27,9 @@ function PrivyConsumer({ children }: { children: React.ReactNode }) {
 export function RealAuthProvider({ children }: { children: React.ReactNode }) {
   const appId = env.privyAppIdPublic;
 
-  if (!appId) {
+  // Next.js build requires skipping actual Provider initialization if we don't have a valid App ID
+  // or if we are using a dummy test ID during build. Privy throws otherwise.
+  if (!appId || appId === 'test') {
     const fallbackValue: AuthContextType = {
       ready: true,
       authenticated: false,

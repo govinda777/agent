@@ -21,6 +21,7 @@ import {
   Settings
 } from 'lucide-react';
 import { usePrivy } from '@/modules/auth/client';
+import { env } from '@/config/env';
 
 interface Agent {
   id: string;
@@ -66,7 +67,8 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchAgents = async () => {
       try {
-        const token = await getAccessToken();
+        let token = null;
+        try { if (env.privyAppIdPublic) token = await getAccessToken(); } catch (e) {}
         const response = await fetch('/api/agents', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -230,10 +232,12 @@ function ChatDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
     transport: new TextStreamChatTransport({
       api: `/api/agents/${agent.id}/chat`,
       headers: async () => {
-        const token = await getAccessToken();
-        return {
-          'Authorization': `Bearer ${token}`,
-        };
+        let token = null;
+        try { if (env.privyAppIdPublic) token = await getAccessToken(); } catch (e) {}
+        if (token) {
+          return { 'Authorization': `Bearer ${token}` } as Record<string, string>;
+        }
+        return {} as Record<string, string>;
       },
     }),
   });

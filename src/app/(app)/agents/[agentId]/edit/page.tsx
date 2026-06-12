@@ -4,7 +4,8 @@ import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy } from '@/modules/auth/client';
+import { env } from '@/config/env';
 
 interface EditAgentProps {
   params: Promise<{ agentId: string }>;
@@ -32,7 +33,8 @@ export default function EditAgent({ params }: EditAgentProps) {
   useEffect(() => {
     const fetchAgentDetails = async () => {
       try {
-        const token = await getAccessToken();
+        let token = null;
+        try { if (env.privyAppIdPublic) token = await getAccessToken(); } catch (e) {}
         const response = await fetch(`/api/agents/${agentId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -91,7 +93,8 @@ export default function EditAgent({ params }: EditAgentProps) {
     setError(null);
 
     try {
-      const token = await getAccessToken();
+      let token = null;
+      try { if (env.privyAppIdPublic) token = await getAccessToken(); } catch (e) {}
       const response = await fetch(`/api/agents/${agentId}`, {
         method: 'PUT',
         headers: {
