@@ -10,12 +10,12 @@ export async function POST(request: Request) {
     const { tenantId } = await requireAuth(request);
 
     const body = await request.json();
-    
+
     if (!body.productName || !body.amountInCents) {
       return NextResponse.json({ error: 'Missing productName or amountInCents' }, { status: 400 });
     }
     const { productName, amountInCents } = body;
-    
+
     const host = request.headers.get('host');
     const protocol = env.nodeEnv === 'development' ? 'http' : 'https';
     const baseUrl = `${protocol}://${host}`;
@@ -34,11 +34,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ url }, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating checkout:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+    const err = error as Error;
+    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
   }
 }

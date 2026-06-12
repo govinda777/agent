@@ -12,10 +12,12 @@ function PrivyConsumer({ children }: { children: React.ReactNode }) {
   const authValue: AuthContextType = {
     ready: privy.ready,
     authenticated: privy.authenticated,
-    user: privy.user ? {
-      id: privy.user.id,
-      email: privy.user.email ? { address: privy.user.email.address } : undefined,
-    } : null,
+    user: privy.user
+      ? {
+          id: privy.user.id,
+          email: privy.user.email ? { address: privy.user.email.address } : undefined,
+        }
+      : null,
     login: privy.login,
     logout: privy.logout,
     getAccessToken: async () => privy.getAccessToken(),

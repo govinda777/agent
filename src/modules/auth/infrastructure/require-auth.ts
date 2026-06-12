@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { tokenVerifier } from '../di';
 import { prisma } from '@/lib/prisma';
 
@@ -60,19 +61,19 @@ export async function requireAuth(request: Request) {
     const newTenant = await prisma.tenant.create({
       data: {
         trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-      }
+      },
     });
     await prisma.tenantUser.create({
       data: {
         userId: user.id,
         tenantId: newTenant.id,
-        role: 'OWNER'
-      }
+        role: 'OWNER',
+      },
     });
-    user = await prisma.user.findUnique({
+    user = (await prisma.user.findUnique({
       where: { privyId },
       include: { tenants: { include: { tenant: true } } },
-    }) as any;
+    })) as any;
   }
 
   if (!user) {

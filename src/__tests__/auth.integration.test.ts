@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { prisma } from '@/lib/prisma';
 
@@ -14,15 +15,15 @@ vi.mock('@/lib/prisma', () => ({
     },
     tenantUser: {
       create: vi.fn(),
-    }
-  }
+    },
+  },
 }));
 
 // Mock tokenVerifier antes de importar requireAuth
 vi.mock('@/modules/auth/di', () => ({
   tokenVerifier: {
     verifyToken: vi.fn(),
-  }
+  },
 }));
 
 // Import after mock
@@ -40,21 +41,19 @@ describe('Auth Middleware (requireAuth)', () => {
 
   it('creates user and tenant on first login', async () => {
     const req = new Request('http://localhost', {
-      headers: new Headers({ 'authorization': 'Bearer valid-token' })
+      headers: new Headers({ authorization: 'Bearer valid-token' }),
     });
 
     (tokenVerifier.verifyToken as any).mockResolvedValue('did:privy:newuser');
-    
+
     // Simula usuário não existente
     (prisma.user.findUnique as any).mockResolvedValue(null);
-    
+
     // Simula criação do usuário e tenant
     (prisma.user.create as any).mockResolvedValue({
       id: 'user-1',
       privyId: 'did:privy:newuser',
-      tenants: [
-        { tenantId: 'tenant-1' }
-      ]
+      tenants: [{ tenantId: 'tenant-1' }],
     });
 
     const session = await requireAuth(req);
@@ -68,18 +67,16 @@ describe('Auth Middleware (requireAuth)', () => {
 
   it('returns existing user and defaults to first tenant', async () => {
     const req = new Request('http://localhost', {
-      headers: new Headers({ 'authorization': 'Bearer valid-token' })
+      headers: new Headers({ authorization: 'Bearer valid-token' }),
     });
 
     (tokenVerifier.verifyToken as any).mockResolvedValue('did:privy:existing');
-    
+
     // Simula usuário existente com tenant
     (prisma.user.findUnique as any).mockResolvedValue({
       id: 'user-2',
       privyId: 'did:privy:existing',
-      tenants: [
-        { tenantId: 'tenant-2' }
-      ]
+      tenants: [{ tenantId: 'tenant-2' }],
     });
 
     const session = await requireAuth(req);

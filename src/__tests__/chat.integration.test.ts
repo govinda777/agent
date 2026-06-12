@@ -1,13 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from '@/app/api/agents/[agentId]/chat/route';
-import { prisma } from '@/lib/prisma';
 import { processAgentChatUseCase } from '@/modules/agents/di';
 
 // Mock dependencies
 vi.mock('@/modules/auth/di', () => ({
   tokenVerifier: {
     verifyToken: vi.fn(),
-  }
+  },
 }));
 
 vi.mock('@/modules/auth/infrastructure/require-auth', () => ({
@@ -46,7 +46,7 @@ describe('Agent Chat API Route Integration', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'authorization': 'Bearer mock-token',
+        authorization: 'Bearer mock-token',
       },
       body: JSON.stringify({
         messages: [{ role: 'user', content: 'Olá!' }],
@@ -59,12 +59,12 @@ describe('Agent Chat API Route Integration', () => {
     });
 
     expect(response.status).toBe(200);
-    
+
     // Read stream response
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let result = '';
-    
+
     if (reader) {
       while (true) {
         const { done, value } = await reader.read();
@@ -104,7 +104,7 @@ describe('Agent Chat API Route Integration', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'authorization': 'Bearer mock-token',
+        authorization: 'Bearer mock-token',
       },
       body: JSON.stringify({
         messages: [{ role: 'user', content: 'Olá!' }],
@@ -120,7 +120,7 @@ describe('Agent Chat API Route Integration', () => {
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let result = '';
-    
+
     if (reader) {
       while (true) {
         const { done, value } = await reader.read();

@@ -8,7 +8,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const isE2E =
     typeof window !== 'undefined' &&
     (window.localStorage.getItem('playwright-mock-auth') === 'true' ||
-     process.env.NEXT_PUBLIC_PLAYWRIGHT_TEST === 'true');
+      process.env.NEXT_PUBLIC_PLAYWRIGHT_TEST === 'true');
 
   if (isE2E) {
     return <MockAuthProvider>{children}</MockAuthProvider>;
