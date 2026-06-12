@@ -2,12 +2,14 @@ import Stripe from 'stripe';
 import { env } from '@/config/env';
 
 export interface CheckoutDTO {
-  productName: string;
-  amountInCents: number;
+  productName?: string;
+  amountInCents?: number;
+  priceId?: string;
+  mode?: 'payment' | 'subscription';
   successUrl: string;
   cancelUrl: string;
   customerEmail?: string;
-  tenantId: string;
+  tenantId?: string;
 }
 
 export class ProcessCheckoutUseCase {
@@ -15,31 +17,35 @@ export class ProcessCheckoutUseCase {
 
   constructor() {
     // For MVP we assume the environment variable exists
-    this.stripe = new Stripe(env.stripeSecretKey, {
-      apiVersion: '2026-05-27.dahlia', // Updated to a modern supported API version
+    this.stripe = new Stripe(env.stripeSecretKey || 'sk_test_123', {
+      apiVersion: '2023-10-16' as any, // Updated to a modern supported API version
     });
   }
 
   async execute(data: CheckoutDTO): Promise<{ url: string | null }> {
     try {
-      const session = await this.stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [
-          {
+      const mode = data.mode || 'subscription';
+      const lineItem = data.priceId
+        ? {
+            price: data.priceId,
+            quantity: 1,
+          }
+        : {
             price_data: {
               currency: 'brl',
               product_data: {
-                name: data.productName,
+                name: data.productName as string,
               },
-              unit_amount: data.amountInCents,
-              recurring: {
-                interval: 'month',
-              },
+              unit_amount: data.amountInCents as number,
+              ...(mode === 'subscription' ? { recurring: { interval: 'month' as const } } : {}),
             },
             quantity: 1,
-          },
-        ],
-        mode: 'subscription',
+          };
+
+      const session = await this.stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [lineItem as any],
+        mode,
         success_url: data.successUrl,
         cancel_url: data.cancelUrl,
         customer_email: data.customerEmail,

@@ -3,18 +3,43 @@ import { ProcessCheckoutUseCase } from '@/modules/checkout/useCases/ProcessCheck
 import { requireAuth } from '@/modules/auth/server';
 import { env } from '@/config/env';
 
-const processCheckoutUseCase = new ProcessCheckoutUseCase();
-
 export async function POST(request: Request) {
   try {
-    const { tenantId } = await requireAuth(request);
-
+    const processCheckoutUseCase = new ProcessCheckoutUseCase();
     const body = await request.json();
     
-    if (!body.productName || !body.amountInCents) {
-      return NextResponse.json({ error: 'Missing productName or amountInCents' }, { status: 400 });
+    // Check if auth header is present
+    const authHeader = request.headers.get('authorization');
+    let tenantId;
+
+    // Check for auth if available, and if no auth available and it is a subscription then we will get a 401
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const authResult = await requireAuth(request);
+        tenantId = authResult.tenantId;
+      } catch (e: any) {
+        console.error('requireAuth failed:', e.message);
+      }
     }
-    const { productName, amountInCents } = body;
+
+    if (!body.priceId && (!body.productName || !body.amountInCents)) {
+      return NextResponse.json({ error: 'Missing priceId or productName and amountInCents' }, { status: 400 });
+    }
+
+    const { productName, amountInCents, priceId } = body;
+
+    // Determine mode based on priceId or explicit mode in body
+    let mode: 'payment' | 'subscription' = 'subscription';
+    if (priceId === env.stripeConsultingPriceId) {
+      mode = 'payment';
+    } else if (body.mode === 'payment') {
+      mode = 'payment';
+    }
+
+    // For subscriptions, tenantId is required
+    if (mode === 'subscription' && !tenantId) {
+      return NextResponse.json({ error: 'Authentication required for subscription' }, { status: 401 });
+    }
     
     const host = request.headers.get('host');
     const protocol = env.nodeEnv === 'development' ? 'http' : 'https';
@@ -23,6 +48,8 @@ export async function POST(request: Request) {
     const { url } = await processCheckoutUseCase.execute({
       productName,
       amountInCents,
+      priceId,
+      mode,
       tenantId,
       successUrl: `${baseUrl}/onboarding?success=true`,
       cancelUrl: `${baseUrl}/checkout?canceled=true`,
