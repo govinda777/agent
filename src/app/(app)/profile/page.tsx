@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Key, Server } from 'lucide-react';
 import { usePrivy } from '@/modules/auth/client';
+import { env } from '@/config/env';
 
 export default function ProfilePage() {
   const { ready, authenticated, getAccessToken } = usePrivy();
@@ -24,7 +25,8 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const token = await getAccessToken();
+      let token = null;
+      try { if (env.privyAppIdPublic) token = await getAccessToken(); } catch (e) {}
       const response = await fetch('/api/profile', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -48,7 +50,8 @@ export default function ProfilePage() {
     setMessage(null);
 
     try {
-      const token = await getAccessToken();
+      let token = null;
+      try { if (env.privyAppIdPublic) token = await getAccessToken(); } catch (e) {}
       const response = await fetch('/api/profile', {
         method: 'POST',
         headers: {

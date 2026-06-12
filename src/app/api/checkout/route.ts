@@ -1,13 +1,33 @@
 import { NextResponse } from 'next/server';
-import { ProcessCheckoutUseCase } from '@/modules/checkout/useCases/ProcessCheckoutUseCase';
+import { processCheckoutUseCase } from '@/modules/checkout/di';
 import { requireAuth } from '@/modules/auth/server';
 import { env } from '@/config/env';
+import productsData from '@/config/products.json';
 
 export async function POST(request: Request) {
   try {
-    const processCheckoutUseCase = new ProcessCheckoutUseCase();
     const body = await request.json();
-    
+    const { priceId, email } = body;
+
+    if (!priceId) {
+      return NextResponse.json({ error: 'Missing priceId' }, { status: 400 });
+    }
+
+    // Find product matching the priceId from frontend
+    const product = productsData.products.find(p => {
+      // In a real app we'd map priceId to env variables directly or store Stripe IDs in JSON
+      // For this app, we compare the requested priceId against env variables derived from the JSON mapping
+      const envKey = p.priceIdEnvKey as keyof typeof env;
+      const expectedPriceId = env[envKey] || (process.env[p.priceIdEnvKey] as string);
+      return expectedPriceId === priceId;
+    });
+
+    if (!product) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    const { productName, amountInCents, mode } = product as any;
+
     // Check if auth header is present
     const authHeader = request.headers.get('authorization');
     let tenantId;
@@ -20,20 +40,6 @@ export async function POST(request: Request) {
       } catch (e: any) {
         console.error('requireAuth failed:', e.message);
       }
-    }
-
-    if (!body.priceId && (!body.productName || !body.amountInCents)) {
-      return NextResponse.json({ error: 'Missing priceId or productName and amountInCents' }, { status: 400 });
-    }
-
-    const { productName, amountInCents, priceId } = body;
-
-    // Determine mode based on priceId or explicit mode in body
-    let mode: 'payment' | 'subscription' = 'subscription';
-    if (priceId === env.stripeConsultingPriceId) {
-      mode = 'payment';
-    } else if (body.mode === 'payment') {
-      mode = 'payment';
     }
 
     // For subscriptions, tenantId is required
@@ -53,7 +59,7 @@ export async function POST(request: Request) {
       tenantId,
       successUrl: `${baseUrl}/onboarding?success=true`,
       cancelUrl: `${baseUrl}/checkout?canceled=true`,
-      customerEmail: body.email,
+      customerEmail: email,
     });
 
     if (!url) {

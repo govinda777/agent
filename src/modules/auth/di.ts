@@ -1,9 +1,8 @@
-import { TokenVerifier } from './domain/TokenVerifier';
-import { PrivyTokenVerifier } from './infrastructure/PrivyTokenVerifier';
+import { env } from '@/config/env';
 import { MockTokenVerifier } from './mocks/MockTokenVerifier';
+import { PrivyTokenVerifier } from './infrastructure/PrivyTokenVerifier';
 
-const isTest = process.env.NODE_ENV === 'test' || process.env.PLAYWRIGHT_TEST === 'true';
-
-export const tokenVerifier: TokenVerifier = isTest
+// --- Infrastructure: Auth ---
+export const tokenVerifier = env.nodeEnv === 'test' || (env.nodeEnv === 'development' && !env.privyAppSecret)
   ? new MockTokenVerifier()
   : new PrivyTokenVerifier();

@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy } from '@/modules/auth/client';
+import { env } from '@/config/env';
 
 export default function NewAgent() {
   const router = useRouter();
@@ -48,7 +49,8 @@ export default function NewAgent() {
     setError(null);
 
     try {
-      const token = await getAccessToken();
+      let token = null;
+      try { if (env.privyAppIdPublic) token = await getAccessToken(); } catch (e) {}
       const response = await fetch('/api/agents', {
         method: 'POST',
         headers: {
