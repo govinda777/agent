@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Banco de Dados Principal (PostgreSQL) para o Prisma
   postgres:

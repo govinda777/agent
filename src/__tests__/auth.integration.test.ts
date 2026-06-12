@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { prisma } from '@/lib/prisma';
 
 // Mock dependências externas
 vi.mock('@/lib/prisma', () => ({
@@ -24,10 +23,14 @@ vi.mock('@/modules/auth/di', () => ({
   tokenVerifier: {
     verifyToken: vi.fn(),
   },
+  authenticateUserUseCase: {
+    execute: vi.fn(),
+  },
 }));
 
 // Import after mock
-const { requireAuth, tokenVerifier } = await import('@/modules/auth/server');
+const { requireAuth, tokenVerifier, authenticateUserUseCase } =
+  await import('@/modules/auth/server');
 
 describe('Auth Middleware (requireAuth)', () => {
   beforeEach(() => {
@@ -46,14 +49,11 @@ describe('Auth Middleware (requireAuth)', () => {
 
     (tokenVerifier.verifyToken as any).mockResolvedValue('did:privy:newuser');
 
-    // Simula usuário não existente
-    (prisma.user.findUnique as any).mockResolvedValue(null);
-
-    // Simula criação do usuário e tenant
-    (prisma.user.create as any).mockResolvedValue({
-      id: 'user-1',
+    // Simula execução do caso de uso
+    (authenticateUserUseCase.execute as any).mockResolvedValue({
+      userId: 'user-1',
       privyId: 'did:privy:newuser',
-      tenants: [{ tenantId: 'tenant-1' }],
+      tenantId: 'tenant-1',
     });
 
     const session = await requireAuth(req);
@@ -62,7 +62,10 @@ describe('Auth Middleware (requireAuth)', () => {
       privyId: 'did:privy:newuser',
       tenantId: 'tenant-1',
     });
-    expect(prisma.user.create).toHaveBeenCalled();
+    expect(authenticateUserUseCase.execute).toHaveBeenCalledWith({
+      privyId: 'did:privy:newuser',
+      requestedTenantId: null,
+    });
   });
 
   it('returns existing user and defaults to first tenant', async () => {
@@ -72,11 +75,11 @@ describe('Auth Middleware (requireAuth)', () => {
 
     (tokenVerifier.verifyToken as any).mockResolvedValue('did:privy:existing');
 
-    // Simula usuário existente com tenant
-    (prisma.user.findUnique as any).mockResolvedValue({
-      id: 'user-2',
+    // Simula execução do caso de uso
+    (authenticateUserUseCase.execute as any).mockResolvedValue({
+      userId: 'user-2',
       privyId: 'did:privy:existing',
-      tenants: [{ tenantId: 'tenant-2' }],
+      tenantId: 'tenant-2',
     });
 
     const session = await requireAuth(req);
@@ -84,6 +87,10 @@ describe('Auth Middleware (requireAuth)', () => {
       userId: 'user-2',
       privyId: 'did:privy:existing',
       tenantId: 'tenant-2',
+    });
+    expect(authenticateUserUseCase.execute).toHaveBeenCalledWith({
+      privyId: 'did:privy:existing',
+      requestedTenantId: null,
     });
   });
 });
