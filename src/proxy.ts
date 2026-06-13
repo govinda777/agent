@@ -10,7 +10,8 @@ export function proxy(request: NextRequest) {
     pathname.startsWith('/onboarding') ||
     pathname.startsWith('/profile') ||
     pathname.startsWith('/checkout') ||
-    pathname.startsWith('/agents');
+    pathname.startsWith('/agents') ||
+    pathname.startsWith('/sync');
 
   // Redireciona usuários deslogados tentando acessar área logada
   if (isProtectedRoute && !token) {
@@ -35,6 +36,7 @@ export const config = {
     '/profile/:path*',
     '/checkout/:path*',
     '/agents/:path*',
+    '/sync/:path*',
     '/login',
   ],
 };

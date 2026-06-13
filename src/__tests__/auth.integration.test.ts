@@ -23,13 +23,13 @@ vi.mock('@/modules/auth/di', () => ({
   tokenVerifier: {
     verifyToken: vi.fn(),
   },
-  authenticateUserUseCase: {
+  getUserByPrivyIdQuery: {
     execute: vi.fn(),
   },
 }));
 
 // Import after mock
-const { requireAuth, tokenVerifier, authenticateUserUseCase } =
+const { requireAuth, tokenVerifier, getUserByPrivyIdQuery } =
   await import('@/modules/auth/server');
 
 describe('Auth Middleware (requireAuth)', () => {
@@ -42,55 +42,42 @@ describe('Auth Middleware (requireAuth)', () => {
     await expect(requireAuth(req)).rejects.toThrow('Missing or invalid authorization header');
   });
 
-  it('creates user and tenant on first login', async () => {
-    const req = new Request('http://localhost', {
-      headers: new Headers({ authorization: 'Bearer valid-token' }),
-    });
-
-    (tokenVerifier.verifyToken as any).mockResolvedValue('did:privy:newuser');
-
-    // Simula execução do caso de uso
-    (authenticateUserUseCase.execute as any).mockResolvedValue({
-      userId: 'user-1',
-      privyId: 'did:privy:newuser',
-      tenantId: 'tenant-1',
-    });
-
-    const session = await requireAuth(req);
-    expect(session).toEqual({
-      userId: 'user-1',
-      privyId: 'did:privy:newuser',
-      tenantId: 'tenant-1',
-    });
-    expect(authenticateUserUseCase.execute).toHaveBeenCalledWith({
-      privyId: 'did:privy:newuser',
-      requestedTenantId: null,
-    });
-  });
-
-  it('returns existing user and defaults to first tenant', async () => {
+  it('returns session if user is provisioned', async () => {
     const req = new Request('http://localhost', {
       headers: new Headers({ authorization: 'Bearer valid-token' }),
     });
 
     (tokenVerifier.verifyToken as any).mockResolvedValue('did:privy:existing');
 
-    // Simula execução do caso de uso
-    (authenticateUserUseCase.execute as any).mockResolvedValue({
-      userId: 'user-2',
+    // Simula execução da Query
+    (getUserByPrivyIdQuery.execute as any).mockResolvedValue({
+      userId: 'user-1',
       privyId: 'did:privy:existing',
-      tenantId: 'tenant-2',
+      tenantId: 'tenant-1',
     });
 
     const session = await requireAuth(req);
     expect(session).toEqual({
-      userId: 'user-2',
+      userId: 'user-1',
       privyId: 'did:privy:existing',
-      tenantId: 'tenant-2',
+      tenantId: 'tenant-1',
     });
-    expect(authenticateUserUseCase.execute).toHaveBeenCalledWith({
+    expect(getUserByPrivyIdQuery.execute).toHaveBeenCalledWith({
       privyId: 'did:privy:existing',
       requestedTenantId: null,
     });
+  });
+
+  it('throws error if user is not provisioned', async () => {
+    const req = new Request('http://localhost', {
+      headers: new Headers({ authorization: 'Bearer valid-token' }),
+    });
+
+    (tokenVerifier.verifyToken as any).mockResolvedValue('did:privy:new');
+
+    // Simula execução da Query retornando nulo
+    (getUserByPrivyIdQuery.execute as any).mockResolvedValue(null);
+
+    await expect(requireAuth(req)).rejects.toThrow('NOT_PROVISIONED');
   });
 });

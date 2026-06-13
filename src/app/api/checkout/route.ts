@@ -24,7 +24,7 @@ export async function POST(request: Request) {
       productName,
       amountInCents,
       tenantId,
-      successUrl: `${baseUrl}/onboarding?success=true`,
+      successUrl: `${baseUrl}/checkout/success`,
       cancelUrl: `${baseUrl}/checkout?canceled=true`,
       customerEmail: body.email,
     });
@@ -34,9 +34,11 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ url }, { status: 200 });
-  } catch (error: unknown) {
+  } catch (error: any) {
+    if (error.message === 'NOT_PROVISIONED') {
+      return NextResponse.json({ error: 'User is not provisioned', code: 'NOT_PROVISIONED' }, { status: 403 });
+    }
     console.error('Error creating checkout:', error);
-    const err = error as Error;
-    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

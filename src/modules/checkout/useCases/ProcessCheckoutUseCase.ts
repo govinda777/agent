@@ -14,9 +14,8 @@ export class ProcessCheckoutUseCase {
   private stripe: Stripe;
 
   constructor() {
-    // For MVP we assume the environment variable exists
     this.stripe = new Stripe(env.stripeSecretKey, {
-      apiVersion: '2026-05-27.dahlia', // Updated to a modern supported API version
+      apiVersion: '2026-05-27.dahlia',
     });
   }
 
@@ -40,7 +39,7 @@ export class ProcessCheckoutUseCase {
           },
         ],
         mode: 'subscription',
-        success_url: data.successUrl,
+        success_url: `${data.successUrl}?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: data.cancelUrl,
         customer_email: data.customerEmail,
         client_reference_id: data.tenantId,

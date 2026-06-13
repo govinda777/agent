@@ -36,6 +36,7 @@ interface Agent {
 export default function Dashboard() {
   const { getAccessToken } = usePrivy();
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [tenantStatus, setTenantStatus] = useState<string>('FREE');
   const [isLoading, setIsLoading] = useState(true);
 
   // Drawer States
@@ -65,26 +66,37 @@ export default function Dashboard() {
   }, [success]);
 
   useEffect(() => {
-    const fetchAgents = async () => {
+    const fetchData = async () => {
       try {
         const token = await getAccessToken();
-        const response = await fetch('/api/agents', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        
+        // Fetch agents
+        const agentsResponse = await fetch('/api/agents', {
+          headers: { Authorization: `Bearer ${token}` },
         });
-        if (response.ok) {
-          const data = await response.json();
-          setAgents(data.agents || []);
+        if (agentsResponse.ok) {
+          const agentsData = await agentsResponse.json();
+          setAgents(agentsData.agents || []);
+        }
+
+        // Fetch tenant status
+        const tenantResponse = await fetch('/api/tenant', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (tenantResponse.ok) {
+          const tenantData = await tenantResponse.json();
+          if (tenantData.status) {
+            setTenantStatus(tenantData.status);
+          }
         }
       } catch (error) {
-        console.error('Failed to fetch agents:', error);
+        console.error('Failed to fetch data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchAgents();
+    fetchData();
   }, [getAccessToken]);
 
   return (
@@ -112,24 +124,26 @@ export default function Dashboard() {
       </div>
 
       {/* Subscription Banner */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 mb-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between">
-        <div className="flex items-start sm:items-center mb-4 sm:mb-0">
-          <Zap className="w-5 h-5 text-amber-500 mt-0.5 sm:mt-0 mr-3 shrink-0" />
-          <div>
-            <h3 className="font-semibold text-amber-900">Plano Gratuito (7 dias restantes)</h3>
-            <p className="text-sm text-amber-700">
-              Tem acesso a 1 agente, 1.000 tokens e 1.000 execuções. Para limites ilimitados, faça
-              upgrade.
-            </p>
+      {tenantStatus !== 'ACTIVE' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 mb-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between">
+          <div className="flex items-start sm:items-center mb-4 sm:mb-0">
+            <Zap className="w-5 h-5 text-amber-500 mt-0.5 sm:mt-0 mr-3 shrink-0" />
+            <div>
+              <h3 className="font-semibold text-amber-900">Plano Gratuito (7 dias restantes)</h3>
+              <p className="text-sm text-amber-700">
+                Tem acesso a 1 agente, 1.000 tokens e 1.000 execuções. Para limites ilimitados, faça
+                upgrade.
+              </p>
+            </div>
           </div>
+          <Link
+            href="/checkout"
+            className="text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 px-4 py-2 rounded-md self-start sm:self-auto transition-colors shadow-sm"
+          >
+            Fazer Upgrade Agora
+          </Link>
         </div>
-        <Link
-          href="/checkout"
-          className="text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 px-4 py-2 rounded-md self-start sm:self-auto transition-colors shadow-sm"
-        >
-          Fazer Upgrade Agora
-        </Link>
-      </div>
+      )}
 
       {/* Agents Module */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">

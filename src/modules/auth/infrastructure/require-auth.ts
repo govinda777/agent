@@ -1,4 +1,4 @@
-import { tokenVerifier, authenticateUserUseCase } from '../di';
+import { tokenVerifier, getUserByPrivyIdQuery } from '../di';
 
 export async function requireAuth(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -17,10 +17,14 @@ export async function requireAuth(request: Request) {
 
   const requestedTenantId = request.headers.get('x-tenant-id');
 
-  const session = await authenticateUserUseCase.execute({
+  const session = await getUserByPrivyIdQuery.execute({
     privyId,
     requestedTenantId,
   });
+
+  if (!session) {
+    throw new Error('NOT_PROVISIONED');
+  }
 
   return session;
 }

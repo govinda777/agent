@@ -11,7 +11,11 @@ export default function Login() {
 
   useEffect(() => {
     if (ready && authenticated) {
-      router.push('/onboarding');
+      // The proxy.ts allows redirect_to, but let's grab it from searchParams if available
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get('redirect_to');
+      const syncUrl = redirectTo ? `/sync?redirect_to=${encodeURIComponent(redirectTo)}` : '/sync';
+      router.push(syncUrl);
     }
   }, [ready, authenticated, router]);
 

@@ -57,14 +57,6 @@ services:
       n8n-postgres:
         condition: service_healthy
 
-  # Stripe Mock - Para simular API de pagamentos localmente
-  stripe-mock:
-    image: stripemock/stripe-mock:latest
-    container_name: agent1-stripe-mock
-    ports:
-      - "12111:12111"  # HTTP
-      - "12112:12112"  # HTTPS
-
 volumes:
   postgres_data:
   n8n_postgres_data:

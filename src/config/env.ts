@@ -15,5 +15,6 @@ export const env = {
   freePlanTrialDays: Number(process.env.FREE_PLAN_TRIAL_DAYS),
   freePlanMaxExecutions: Number(process.env.FREE_PLAN_MAX_EXECUTIONS),
   stripeSecretKey: process.env.STRIPE_SECRET_KEY as string,
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET as string,
   nodeEnv: process.env.NODE_ENV as string,
 };

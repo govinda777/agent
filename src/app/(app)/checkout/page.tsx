@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy } from '@/modules/auth/client';
 import { Loader2, CheckCircle2 } from 'lucide-react';
-import { env } from '@/config/env';
+
 
 // TODO: Os produtos deveriam estar cadastrados no projeto e nao na strip pois caso agente mude de GW teremos que cadastrar novamente
 export default function Checkout() {
-  const { user } = usePrivy();
+  const { user, getAccessToken } = usePrivy();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,13 +17,16 @@ export default function Checkout() {
     setError(null);
 
     try {
+      const token = await getAccessToken();
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          priceId: env.stripeProPriceId,
+          productName: 'Plano Profissional',
+          amountInCents: 9700, // TODO: Fazer essa info retornar do BE
           email: user?.email?.address,
         }),
       });
