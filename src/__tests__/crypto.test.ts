@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { CryptoService } from '@/lib/crypto';
 
 vi.mock('@/config/env', () => ({
   env: {
     encryptionKey: '12345678901234567890123456789012',
-  }
+  },
 }));
 
 describe('CryptoService', () => {

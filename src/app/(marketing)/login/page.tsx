@@ -11,7 +11,11 @@ export default function Login() {
 
   useEffect(() => {
     if (ready && authenticated) {
-      router.push('/onboarding');
+      // The proxy.ts allows redirect_to, but let's grab it from searchParams if available
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get('redirect_to');
+      const syncUrl = redirectTo ? `/sync?redirect_to=${encodeURIComponent(redirectTo)}` : '/sync';
+      router.push(syncUrl);
     }
   }, [ready, authenticated, router]);
 
@@ -45,7 +49,9 @@ export default function Login() {
         </div>
       </div>
       <div className="mt-8">
-         <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">← Voltar para a página inicial</Link>
+        <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
+          ← Voltar para a página inicial
+        </Link>
       </div>
     </div>
   );

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { CreateAgentUseCase } from './CreateAgentUseCase';
-import { IAgentRepository } from '../repositories/IAgentRepository';
+import { AgentRepository } from '../domain/repositories/AgentRepository';
 
 describe('CreateAgentUseCase', () => {
-  const mockAgentRepository: IAgentRepository = {
+  const mockAgentRepository: AgentRepository = {
     save: vi.fn().mockImplementation(async (tenantId, data) => {
       return {
         id: 'agent-123',
@@ -24,6 +24,7 @@ describe('CreateAgentUseCase', () => {
       agentsCount: 0,
     }),
     incrementExecutions: vi.fn(),
+    update: vi.fn(),
   };
 
   it('should successfully create an agent when valid data is provided', async () => {

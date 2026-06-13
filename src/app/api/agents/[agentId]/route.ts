@@ -2,10 +2,7 @@ import { NextResponse } from 'next/server';
 import { agentRepository, updateAgentUseCase } from '@/modules/agents/di';
 import { requireAuth } from '@/modules/auth/server';
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ agentId: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ agentId: string }> }) {
   try {
     const { agentId } = await params;
     const { tenantId } = await requireAuth(request);
@@ -18,21 +15,15 @@ export async function GET(
 
     // Retrieve decrypted details for the edit form
     const agent = await agentRepository.getDecryptedById(agentId);
-    
+
     return NextResponse.json({ agent }, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching agent:', error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ agentId: string }> }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ agentId: string }> }) {
   try {
     const { agentId } = await params;
     const { tenantId } = await requireAuth(request);
@@ -48,22 +39,20 @@ export async function PUT(
     const updatedAgent = await updateAgentUseCase.execute({
       id: agentId,
       tenantId,
-      ...body
+      ...body,
     });
 
     return NextResponse.json(
       { message: 'Agente atualizado com sucesso', agent: updatedAgent },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating agent:', error);
-    
-    let status = 500;
-    if (error.message.includes('cannot be empty')) status = 400;
 
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status }
-    );
+    const err = error as Error;
+    let status = 500;
+    if (err.message.includes('cannot be empty')) status = 400;
+
+    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status });
   }
 }

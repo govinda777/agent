@@ -3,13 +3,18 @@ import { POST } from '@/app/api/agents/[agentId]/chat/route';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 
-const LOCAL_ENC_KEY = process.env.ENCRYPTION_KEY || 'coloque_aqui_uma_chave_de_32_caracteres_aleatorios';
+const LOCAL_ENC_KEY =
+  process.env.ENCRYPTION_KEY || 'coloque_aqui_uma_chave_de_32_caracteres_aleatorios';
 const ALGORITHM = 'aes-256-cbc';
 
 function encrypt(text: string) {
   if (!text) return text;
   const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(LOCAL_ENC_KEY.slice(0, 32).padEnd(32, '0')), iv);
+  const cipher = crypto.createCipheriv(
+    ALGORITHM,
+    Buffer.from(LOCAL_ENC_KEY.slice(0, 32).padEnd(32, '0')),
+    iv
+  );
   let encrypted = cipher.update(text);
   encrypted = Buffer.concat([encrypted, cipher.final()]);
   return iv.toString('hex') + ':' + encrypted.toString('hex');
@@ -83,7 +88,7 @@ describe('Cenário: Conversar com o agente n8n ativo via integração', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'authorization': `Bearer mock-token-${userId}`, // Ativa o mock de Privy que mapeia para o userId
+            authorization: `Bearer mock-token-${userId}`, // Ativa o mock de Privy que mapeia para o userId
           },
           body: JSON.stringify({
             messages: [{ role: 'user', content: 'Olá!' }],

@@ -4,10 +4,7 @@ import { requireAuth } from '@/modules/auth/server';
 
 export const runtime = 'nodejs';
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ agentId: string }> }
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ agentId: string }> }) {
   try {
     const { agentId } = await params;
     const body = await request.json();
@@ -19,18 +16,18 @@ export async function POST(
     const messages = body.messages || [];
     const lastMessage = messages[messages.length - 1];
     let lastUserMessage = '';
-    
+
     if (lastMessage) {
       if (lastMessage.parts && Array.isArray(lastMessage.parts)) {
         lastUserMessage = lastMessage.parts
-          .filter((part: any) => part.type === 'text')
-          .map((part: any) => part.text)
+          .filter((part: { type: string; text?: string }) => part.type === 'text')
+          .map((part: { type: string; text?: string }) => part.text || '')
           .join('');
       } else {
         lastUserMessage = lastMessage.content || '';
       }
     }
-    
+
     if (!lastUserMessage) {
       lastUserMessage = body.message || '';
     }
@@ -46,52 +43,48 @@ export async function POST(
             payload: {
               ...body,
               message: lastUserMessage,
-              channel: body.channel || 'web'
+              channel: body.channel || 'web',
             },
           });
 
           // O n8n retorna `{ response: "..." }` conforme configurado no workflow padrão
-          const textResponse = result.response || result.output || result.text || JSON.stringify(result);
+          const textResponse =
+            result.response || result.output || result.text || JSON.stringify(result);
 
-          // Simula o efeito de digitação enviando palavra por palavra
-          const words = textResponse.split(' ');
-          for (let i = 0; i < words.length; i++) {
-            const word = words[i];
-            const suffix = i === words.length - 1 ? '' : ' ';
-            
-            // Envia o fragmento de texto puro
-            controller.enqueue(word + suffix);
-            
-            // 30ms de delay por palavra gera um efeito visual excelente e fluido
-            await new Promise((resolve) => setTimeout(resolve, 30));
-          }
-        } catch (error: any) {
+          // Envia o texto da resposta completo imediatamente para otimizar o tempo de execução no Vercel (limite de 10s no plano Free)
+          controller.enqueue(textResponse);
+        } catch (error: unknown) {
           console.error('Error in stream processing:', error);
-          
+
           let errorMessage = 'Desculpe, ocorreu um erro ao processar sua mensagem.';
-          if (error.message === 'TRIAL_EXPIRED' || error.message === 'QUOTA_EXCEEDED') {
-            errorMessage = 'O assistente encontra-se temporariamente indisponível devido aos limites do plano. Por favor, contacte o administrador.';
-          } else if (error.message === 'Agent not found') {
+          const err = error as Error;
+          if (err.message === 'TRIAL_EXPIRED' || err.message === 'QUOTA_EXCEEDED') {
+            errorMessage =
+              'O assistente encontra-se temporariamente indisponível devido aos limites do plano. Por favor, contacte o administrador.';
+          } else if (err.message === 'Agent not found') {
             errorMessage = 'Agente não encontrado.';
-          } else if (error.message.includes('Status: 404')) {
-            errorMessage = 'Erro 404: O n8n retornou que a URL do Webhook não existe. Por favor, verifique se a URL do Webhook está correta e se o fluxo do n8n está Ativado (Active) no painel do n8n.';
-          } else if (error.message.includes('fetch failed') || error.message.includes('ECONNREFUSED')) {
-            errorMessage = 'Erro de Conexão: Não foi possível conectar ao servidor n8n. Por favor, verifique se o serviço n8n está rodando localmente (execute `docker-compose up` no terminal).';
+          } else if (err.message.includes('Status: 404')) {
+            errorMessage =
+              'Erro 404: O n8n retornou que a URL do Webhook não existe. Por favor, verifique se a URL do Webhook está correta e se o fluxo do n8n está Ativado (Active) no painel do n8n.';
+          } else if (err.message.includes('fetch failed') || err.message.includes('ECONNREFUSED')) {
+            errorMessage =
+              'Erro de Conexão: Não foi possível conectar ao servidor n8n. Por favor, verifique se o serviço n8n está rodando localmente (execute `docker-compose up` no terminal).';
           }
-          
+
           controller.enqueue(errorMessage);
         } finally {
           controller.close();
         }
-      }
+      },
     });
 
     return createTextStreamResponse({ textStream });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error initializing chat stream:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Internal Server Error' }), {
-      status: error.message === 'Unauthorized' ? 401 : 500,
-      headers: { 'Content-Type': 'application/json' }
+    const err = error as Error;
+    return new Response(JSON.stringify({ error: err.message || 'Internal Server Error' }), {
+      status: err.message === 'Unauthorized' ? 401 : 500,
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

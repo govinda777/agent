@@ -26,7 +26,7 @@ export default function EditAgent({ params }: EditAgentProps) {
       web: false,
       whatsapp: false,
       instagram: false,
-    }
+    },
   });
 
   useEffect(() => {
@@ -35,8 +35,8 @@ export default function EditAgent({ params }: EditAgentProps) {
         const token = await getAccessToken();
         const response = await fetch(`/api/agents/${agentId}`, {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         if (!response.ok) {
@@ -45,7 +45,7 @@ export default function EditAgent({ params }: EditAgentProps) {
 
         const data = await response.json();
         const agent = data.agent;
-        
+
         setFormData({
           name: agent.name || '',
           n8nWebhookUrl: agent.n8nWebhookUrl || '',
@@ -54,10 +54,10 @@ export default function EditAgent({ params }: EditAgentProps) {
             web: agent.channels?.web || false,
             whatsapp: agent.channels?.whatsapp || false,
             instagram: agent.channels?.instagram || false,
-          }
+          },
         });
-      } catch (err: any) {
-        setError(err.message || 'Erro ao carregar o agente.');
+      } catch (err: unknown) {
+        setError((err as Error).message || 'Erro ao carregar o agente.');
       } finally {
         setIsLoading(false);
       }
@@ -70,17 +70,17 @@ export default function EditAgent({ params }: EditAgentProps) {
     const { name, value, type, checked } = e.target;
 
     if (type === 'checkbox') {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         channels: {
           ...prev.channels,
-          [name]: checked
-        }
+          [name]: checked,
+        },
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
   };
@@ -96,7 +96,7 @@ export default function EditAgent({ params }: EditAgentProps) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });
@@ -107,8 +107,8 @@ export default function EditAgent({ params }: EditAgentProps) {
       }
 
       router.push('/onboarding?success=agent_updated');
-    } catch (err: any) {
-      setError(err.message || 'Ocorreu um erro desconhecido.');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Ocorreu um erro desconhecido.');
     } finally {
       setIsSubmitting(false);
     }
@@ -129,7 +129,10 @@ export default function EditAgent({ params }: EditAgentProps) {
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="mb-6">
-          <Link href="/onboarding" className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500">
+          <Link
+            href="/onboarding"
+            className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500"
+          >
             <ArrowLeft className="mr-1 w-4 h-4" />
             Voltar ao Dashboard
           </Link>
@@ -137,8 +140,12 @@ export default function EditAgent({ params }: EditAgentProps) {
 
         <div className="bg-white shadow sm:rounded-lg">
           <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Editar Agente (Integração n8n)</h3>
-            <p className="mt-1 text-sm text-gray-500">Atualize as configurações do seu agente e conexões n8n.</p>
+            <h3 className="text-lg leading-6 font-medium text-gray-900">
+              Editar Agente (Integração n8n)
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Atualize as configurações do seu agente e conexões n8n.
+            </p>
           </div>
 
           <div className="px-4 py-5 sm:p-6">
@@ -156,7 +163,9 @@ export default function EditAgent({ params }: EditAgentProps) {
                 </div>
 
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nome do Agente</label>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                    Nome do Agente
+                  </label>
                   <input
                     type="text"
                     name="name"
@@ -176,11 +185,18 @@ export default function EditAgent({ params }: EditAgentProps) {
               <div className="space-y-4">
                 <div>
                   <h4 className="text-base font-medium text-gray-900">Configuração n8n</h4>
-                  <p className="text-sm text-gray-500">Informe os dados do seu fluxo n8n que irá processar as mensagens deste agente.</p>
+                  <p className="text-sm text-gray-500">
+                    Informe os dados do seu fluxo n8n que irá processar as mensagens deste agente.
+                  </p>
                 </div>
 
                 <div>
-                  <label htmlFor="n8nWebhookUrl" className="block text-sm font-medium text-gray-700">Webhook URL do n8n</label>
+                  <label
+                    htmlFor="n8nWebhookUrl"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Webhook URL do n8n
+                  </label>
                   <input
                     type="url"
                     name="n8nWebhookUrl"
@@ -194,7 +210,9 @@ export default function EditAgent({ params }: EditAgentProps) {
                 </div>
 
                 <div>
-                  <label htmlFor="n8nAuthToken" className="block text-sm font-medium text-gray-700">Auth Token do n8n</label>
+                  <label htmlFor="n8nAuthToken" className="block text-sm font-medium text-gray-700">
+                    Auth Token do n8n
+                  </label>
                   <input
                     type="password"
                     name="n8nAuthToken"
@@ -204,7 +222,9 @@ export default function EditAgent({ params }: EditAgentProps) {
                     className="mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md px-3 py-2 border"
                     placeholder="Token de segurança para autenticar as chamadas"
                   />
-                  <p className="mt-1 text-xs text-gray-500">Deixe em branco ou insira um novo token para sobrescrever o atual.</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Deixe em branco ou insira um novo token para sobrescrever o atual.
+                  </p>
                 </div>
               </div>
 
@@ -230,7 +250,9 @@ export default function EditAgent({ params }: EditAgentProps) {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="channel_web" className="font-medium text-gray-700">Web</label>
+                      <label htmlFor="channel_web" className="font-medium text-gray-700">
+                        Web
+                      </label>
                       <p className="text-gray-500">Chat integrado no seu site.</p>
                     </div>
                   </div>
@@ -246,7 +268,9 @@ export default function EditAgent({ params }: EditAgentProps) {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="channel_wa" className="font-medium text-gray-700">WhatsApp</label>
+                      <label htmlFor="channel_wa" className="font-medium text-gray-700">
+                        WhatsApp
+                      </label>
                       <p className="text-gray-500">Atendimento via número de WhatsApp.</p>
                     </div>
                   </div>
@@ -262,7 +286,9 @@ export default function EditAgent({ params }: EditAgentProps) {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="channel_ig" className="font-medium text-gray-700">Instagram</label>
+                      <label htmlFor="channel_ig" className="font-medium text-gray-700">
+                        Instagram
+                      </label>
                       <p className="text-gray-500">Respostas automáticas via Direct.</p>
                     </div>
                   </div>

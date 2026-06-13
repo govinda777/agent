@@ -49,14 +49,22 @@ const cipher = crypto.createCipheriv('aes-256-gcm', derivedKey, iv);
 let encrypted = cipher.update(PAYLOAD, 'utf8', 'hex');
 encrypted += cipher.final('hex');
 const authTag = cipher.getAuthTag().toString('hex');
-const encryptedText = `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+const encryptedText = `${iv.toString('hex')}:${authTag}:${encrypted}`;
 
 describe('Crypto Decryption Benchmark', () => {
-  bench('Original Approach (scryptSync on every call)', () => {
-    decryptSync(encryptedText, PRIVY_ID);
-  }, { time: 1000 });
+  bench(
+    'Original Approach (scryptSync on every call)',
+    () => {
+      decryptSync(encryptedText, PRIVY_ID);
+    },
+    { time: 1000 }
+  );
 
-  bench('Optimized Approach (Cached Key)', () => {
-    decryptWithCache(encryptedText, PRIVY_ID);
-  }, { time: 1000 });
+  bench(
+    'Optimized Approach (Cached Key)',
+    () => {
+      decryptWithCache(encryptedText, PRIVY_ID);
+    },
+    { time: 1000 }
+  );
 });

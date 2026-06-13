@@ -1,4 +1,4 @@
-import { IAgentRepository } from '../repositories/IAgentRepository';
+import { AgentRepository } from '../domain/repositories/AgentRepository';
 import { env } from '@/config/env';
 import { prisma } from '@/lib/prisma';
 import { CryptoService } from '@/lib/crypto';
@@ -8,15 +8,21 @@ export interface ChatDTO {
   tenantId: string;
   userId: string;
   privyId: string;
-  payload: any;
+  payload: {
+    message?: string;
+    channel?: string;
+    [key: string]: unknown;
+  };
 }
 
 export class ProcessAgentChatUseCase {
-  constructor(private agentRepository: IAgentRepository) {}
+  constructor(private agentRepository: AgentRepository) {}
 
-  async execute(data: ChatDTO): Promise<any> {
+  async execute(
+    data: ChatDTO
+  ): Promise<{ response?: string; output?: string; text?: string } & Record<string, unknown>> {
     const { agentId, tenantId, userId, privyId, payload } = data;
-    
+
     // Check Limits First
     const tenantDetails = await this.agentRepository.getTenantDetails(tenantId);
     if (tenantDetails && tenantDetails.status === 'FREE') {
@@ -52,7 +58,7 @@ export class ProcessAgentChatUseCase {
     // Fetch User to get LLM keys
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { llmProvider: true, llmApiKey: true }
+      select: { llmProvider: true, llmApiKey: true },
     });
 
     let decryptedLlmApiKey = undefined;
@@ -80,6 +86,10 @@ export class ProcessAgentChatUseCase {
     // Increment executions if successful
     await this.agentRepository.incrementExecutions(tenantId);
 
-    return n8nResponse.json();
+    return (await n8nResponse.json()) as {
+      response?: string;
+      output?: string;
+      text?: string;
+    } & Record<string, unknown>;
   }
 }

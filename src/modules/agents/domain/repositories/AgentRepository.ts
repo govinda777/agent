@@ -1,11 +1,11 @@
-import { Agent } from '../domain/Agent';
+import { Agent } from '../Agent';
 
-export interface IAgentRepository {
+export interface AgentRepository {
   save(tenantId: string, agentData: Omit<Agent, 'id' | 'createdAt'>): Promise<Agent>;
   findAll(tenantId: string): Promise<Agent[]>;
   findById(id: string, tenantId: string): Promise<Agent | null>;
   getDecryptedById(id: string): Promise<Agent | null>;
-  
+
   // New methods for Tenant/Free Plan Limits
   getTenantDetails(tenantId: string): Promise<{
     status: string;
@@ -13,7 +13,7 @@ export interface IAgentRepository {
     executionsUsed: number;
     agentsCount: number;
   } | null>;
-  
+
   incrementExecutions(tenantId: string): Promise<void>;
   update(id: string, tenantId: string, agentData: Partial<Agent>): Promise<Agent>;
 }

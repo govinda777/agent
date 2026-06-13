@@ -10,12 +10,12 @@ export async function POST(request: Request) {
     const { tenantId } = await requireAuth(request);
 
     const body = await request.json();
-    
+
     if (!body.productName || !body.amountInCents) {
       return NextResponse.json({ error: 'Missing productName or amountInCents' }, { status: 400 });
     }
     const { productName, amountInCents } = body;
-    
+
     const host = request.headers.get('host');
     const protocol = env.nodeEnv === 'development' ? 'http' : 'https';
     const baseUrl = `${protocol}://${host}`;
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
       productName,
       amountInCents,
       tenantId,
-      successUrl: `${baseUrl}/onboarding?success=true`,
+      successUrl: `${baseUrl}/checkout/success`,
       cancelUrl: `${baseUrl}/checkout?canceled=true`,
       customerEmail: body.email,
     });
@@ -35,10 +35,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url }, { status: 200 });
   } catch (error: any) {
+    if (error.message === 'NOT_PROVISIONED') {
+      return NextResponse.json({ error: 'User is not provisioned', code: 'NOT_PROVISIONED' }, { status: 403 });
+    }
     console.error('Error creating checkout:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

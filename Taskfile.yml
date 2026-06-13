@@ -70,10 +70,10 @@ tasks:
       - docker compose down
 
   clean:
-    desc: Remove os containers, redes, volumes (deleta banco de dados) e pasta de build do Next.js
+    desc: Remove os containers, volumes (deleta banco de dados) e pasta de build do Next.js
     cmds:
       - docker compose down -v
-      - cmd /c "if exist .next rmdir /s /q .next"
+      - node -e "const fs = require('fs'); if (fs.existsSync('.next')) fs.rmSync('.next', {recursive:true,force:true});"
 
   reset:
     desc: Limpa completamente a infraestrutura e reconstrói o ambiente local do zero

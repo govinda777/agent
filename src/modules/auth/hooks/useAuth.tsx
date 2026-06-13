@@ -5,11 +5,11 @@ import { AuthContextType } from '../domain/AuthContext';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ 
-  children, 
-  value 
-}: { 
-  children: React.ReactNode; 
+export function AuthProvider({
+  children,
+  value,
+}: {
+  children: React.ReactNode;
   value: AuthContextType;
 }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

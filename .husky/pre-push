@@ -1,2 +1,2 @@
-# Run integration and E2E tests on push (requires infrastructure)
-npx task test
+# Run lightweight checks on push (heavy tests run in CI/CD)
+npx tsc --noEmit

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
@@ -8,9 +8,38 @@ import { usePrivy } from '@privy-io/react-auth';
 
 export default function NewAgent() {
   const router = useRouter();
-  const { getAccessToken } = usePrivy();
+  const { getAccessToken, ready, authenticated } = usePrivy();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [profileData, setProfileData] = useState<{
+    llmProvider: string | null;
+    hasApiKey: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = await getAccessToken();
+        const response = await fetch('/api/profile', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setProfileData({
+            llmProvider: data.llmProvider,
+            hasApiKey: data.hasApiKey,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+    if (ready && authenticated) {
+      fetchProfile();
+    }
+  }, [ready, authenticated, getAccessToken]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -20,24 +49,24 @@ export default function NewAgent() {
       web: false,
       whatsapp: false,
       instagram: false,
-    }
+    },
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
 
     if (type === 'checkbox') {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         channels: {
           ...prev.channels,
-          [name]: checked
-        }
+          [name]: checked,
+        },
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
   };
@@ -53,7 +82,7 @@ export default function NewAgent() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });
@@ -62,7 +91,6 @@ export default function NewAgent() {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Falha ao criar o agente');
       }
-
 
       // Redirect back to dashboard/home after success
       router.push('/?success=agent_created');
@@ -77,7 +105,10 @@ export default function NewAgent() {
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="mb-6">
-          <Link href="/onboarding" className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500">
+          <Link
+            href="/onboarding"
+            className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500"
+          >
             <ArrowLeft className="mr-1 w-4 h-4" />
             Voltar
           </Link>
@@ -85,13 +116,16 @@ export default function NewAgent() {
 
         <div className="bg-white shadow sm:rounded-lg">
           <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Novo Agente (Integração n8n)</h3>
-            <p className="mt-1 text-sm text-gray-500">Configure as opções para o seu novo agente utilizando o fluxo do n8n.</p>
+            <h3 className="text-lg leading-6 font-medium text-gray-900">
+              Novo Agente (Integração n8n)
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Configure as opções para o seu novo agente utilizando o fluxo do n8n.
+            </p>
           </div>
 
           <div className="px-4 py-5 sm:p-6">
             <form onSubmit={handleSubmit} className="space-y-8">
-
               {error && (
                 <div className="p-4 bg-red-50 text-red-700 rounded-md border border-red-200">
                   {error}
@@ -105,7 +139,9 @@ export default function NewAgent() {
                 </div>
 
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nome do Agente</label>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                    Nome do Agente
+                  </label>
                   <input
                     type="text"
                     name="name"
@@ -125,22 +161,60 @@ export default function NewAgent() {
               <div className="space-y-4">
                 <div>
                   <h4 className="text-base font-medium text-gray-900">Configuração n8n</h4>
-                  <p className="text-sm text-gray-500">Informe os dados do seu fluxo n8n que irá processar as mensagens deste agente.</p>
+                  <p className="text-sm text-gray-500">
+                    Informe os dados do seu fluxo n8n que irá processar as mensagens deste agente.
+                  </p>
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
                   <div className="flex">
                     <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      <svg
+                        className="h-5 w-5 text-blue-400"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     </div>
                     <div className="ml-3 flex-1 md:flex md:justify-between">
-                      <p className="text-sm text-blue-700">
-                        A chave de API da Inteligência Artificial (OpenAI/Gemini) será injetada automaticamente neste agente a partir do seu <strong>Perfil</strong>.
-                      </p>
+                      <div>
+                        <p className="text-sm text-blue-700">
+                          A chave de API da Inteligência Artificial (OpenAI/Gemini) será injetada
+                          automaticamente neste agente a partir do seu <strong>Perfil</strong>.
+                        </p>
+                        {profileData ? (
+                          <p className="mt-2 text-xs font-semibold text-blue-800">
+                            {profileData.hasApiKey ? (
+                              <span>
+                                ✓ Chave configurada para o provedor:{' '}
+                                <strong className="uppercase">
+                                  {profileData.llmProvider || 'Padrão'}
+                                </strong>
+                              </span>
+                            ) : (
+                              <span className="text-amber-700">
+                                ⚠ Nenhuma chave de API configurada ainda. O agente precisa de uma
+                                chave configurada no perfil para funcionar.
+                              </span>
+                            )}
+                          </p>
+                        ) : (
+                          <p className="mt-2 text-xs text-blue-500 animate-pulse">
+                            Carregando status das chaves...
+                          </p>
+                        )}
+                      </div>
                       <p className="mt-3 text-sm md:mt-0 md:ml-6">
-                        <Link href="/profile" className="whitespace-nowrap font-medium text-blue-700 hover:text-blue-600">
+                        <Link
+                          href="/profile?from=/agents/new"
+                          className="whitespace-nowrap font-medium text-blue-700 hover:text-blue-600"
+                        >
                           Configurar Chave <span aria-hidden="true">&rarr;</span>
                         </Link>
                       </p>
@@ -149,7 +223,12 @@ export default function NewAgent() {
                 </div>
 
                 <div>
-                  <label htmlFor="n8nWebhookUrl" className="block text-sm font-medium text-gray-700">Webhook URL do n8n</label>
+                  <label
+                    htmlFor="n8nWebhookUrl"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Webhook URL do n8n
+                  </label>
                   <input
                     type="url"
                     name="n8nWebhookUrl"
@@ -163,7 +242,9 @@ export default function NewAgent() {
                 </div>
 
                 <div>
-                  <label htmlFor="n8nAuthToken" className="block text-sm font-medium text-gray-700">Auth Token do n8n</label>
+                  <label htmlFor="n8nAuthToken" className="block text-sm font-medium text-gray-700">
+                    Auth Token do n8n
+                  </label>
                   <input
                     type="password"
                     name="n8nAuthToken"
@@ -173,7 +254,9 @@ export default function NewAgent() {
                     className="mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md px-3 py-2 border"
                     placeholder="Token de segurança para autenticar as chamadas"
                   />
-                  <p className="mt-1 text-xs text-gray-500">Essas credenciais serão criptografadas e salvas de forma segura.</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Essas credenciais serão criptografadas e salvas de forma segura.
+                  </p>
                 </div>
               </div>
 
@@ -199,7 +282,9 @@ export default function NewAgent() {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="channel_web" className="font-medium text-gray-700">Web</label>
+                      <label htmlFor="channel_web" className="font-medium text-gray-700">
+                        Web
+                      </label>
                       <p className="text-gray-500">Chat integrado no seu site.</p>
                     </div>
                   </div>
@@ -215,7 +300,9 @@ export default function NewAgent() {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="channel_wa" className="font-medium text-gray-700">WhatsApp</label>
+                      <label htmlFor="channel_wa" className="font-medium text-gray-700">
+                        WhatsApp
+                      </label>
                       <p className="text-gray-500">Atendimento via número de WhatsApp.</p>
                     </div>
                   </div>
@@ -231,7 +318,9 @@ export default function NewAgent() {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="channel_ig" className="font-medium text-gray-700">Instagram</label>
+                      <label htmlFor="channel_ig" className="font-medium text-gray-700">
+                        Instagram
+                      </label>
                       <p className="text-gray-500">Respostas automáticas via Direct.</p>
                     </div>
                   </div>

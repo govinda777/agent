@@ -10,28 +10,27 @@ export async function POST(request: Request) {
 
     const { llmProvider, llmApiKey } = body;
 
-    // Encrypt the API key before saving
-    let encryptedKey = null;
-    if (llmApiKey) {
-      encryptedKey = CryptoService.encryptWithPrivy(llmApiKey, privyId);
+    const updateData: { llmProvider: string | null; llmApiKey?: string } = {
+      llmProvider: llmProvider || null,
+    };
+
+    if (llmApiKey !== undefined && llmApiKey !== null && llmApiKey !== '') {
+      updateData.llmApiKey = CryptoService.encryptWithPrivy(llmApiKey, privyId);
     }
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: {
-        llmProvider: llmProvider || null,
-        llmApiKey: encryptedKey,
-      },
+      data: updateData,
     });
 
     return NextResponse.json(
       { message: 'Profile updated successfully', provider: updatedUser.llmProvider },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating profile:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
+      { error: (error as Error).message || 'Internal Server Error' },
       { status: 500 }
     );
   }
@@ -40,25 +39,25 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const { userId } = await requireAuth(request);
-    
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         llmProvider: true,
         // Do NOT select llmApiKey to send to frontend
         llmApiKey: true,
-      }
+      },
     });
 
-    return NextResponse.json({
-      llmProvider: user?.llmProvider || null,
-      hasApiKey: !!user?.llmApiKey,
-    }, { status: 200 });
-  } catch (error: any) {
-    console.error('Error fetching profile:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
+      {
+        llmProvider: user?.llmProvider || null,
+        hasApiKey: !!user?.llmApiKey,
+      },
+      { status: 200 }
     );
+  } catch (error: unknown) {
+    console.error('Error fetching profile:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
