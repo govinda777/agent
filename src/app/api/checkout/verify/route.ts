@@ -11,7 +11,7 @@ const stripe = new Stripe(env.stripeSecretKey, {
 export async function POST(request: Request) {
   try {
     const { tenantId } = await requireAuth(request);
-    
+
     const body = await request.json();
     const { session_id } = body;
 
@@ -20,7 +20,9 @@ export async function POST(request: Request) {
     }
 
     const session = await stripe.checkout.sessions.retrieve(session_id);
-    console.log(`Verify Checkout: Session status is ${session.payment_status}, tenantId is ${tenantId}, client_reference_id is ${session.client_reference_id}`);
+    console.log(
+      `Verify Checkout: Session status is ${session.payment_status}, tenantId is ${tenantId}, client_reference_id is ${session.client_reference_id}`
+    );
 
     if (session.payment_status === 'paid' && session.client_reference_id === tenantId) {
       await prisma.tenant.update({
@@ -31,11 +33,15 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: false, status: 'FREE' }, { status: 200 });
-  } catch (error: any) {
-    if (error.message === 'NOT_PROVISIONED') {
-      return NextResponse.json({ error: 'User is not provisioned', code: 'NOT_PROVISIONED' }, { status: 403 });
+  } catch (error: unknown) {
+    const err = error as Error;
+    if (err.message === 'NOT_PROVISIONED') {
+      return NextResponse.json(
+        { error: 'User is not provisioned', code: 'NOT_PROVISIONED' },
+        { status: 403 }
+      );
     }
-    console.error('Error verifying checkout:', error);
+    console.error('Error verifying checkout:', err);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

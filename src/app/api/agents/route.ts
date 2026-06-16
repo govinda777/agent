@@ -35,9 +35,13 @@ export async function GET(request: Request) {
 
     const agents = await getAgentsUseCase.execute(tenantId);
     return NextResponse.json({ agents }, { status: 200 });
-  } catch (error: any) {
-    if (error.message === 'NOT_PROVISIONED') {
-      return NextResponse.json({ error: 'User is not provisioned', code: 'NOT_PROVISIONED' }, { status: 403 });
+  } catch (error: unknown) {
+    const err = error as Error;
+    if (err.message === 'NOT_PROVISIONED') {
+      return NextResponse.json(
+        { error: 'User is not provisioned', code: 'NOT_PROVISIONED' },
+        { status: 403 }
+      );
     }
     console.error('Error fetching agents:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

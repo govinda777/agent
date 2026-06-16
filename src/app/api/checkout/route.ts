@@ -34,11 +34,15 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ url }, { status: 200 });
-  } catch (error: any) {
-    if (error.message === 'NOT_PROVISIONED') {
-      return NextResponse.json({ error: 'User is not provisioned', code: 'NOT_PROVISIONED' }, { status: 403 });
+  } catch (error: unknown) {
+    const err = error as Error;
+    if (err.message === 'NOT_PROVISIONED') {
+      return NextResponse.json(
+        { error: 'User is not provisioned', code: 'NOT_PROVISIONED' },
+        { status: 403 }
+      );
     }
-    console.error('Error creating checkout:', error);
+    console.error('Error creating checkout:', err);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

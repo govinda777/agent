@@ -29,8 +29,7 @@ vi.mock('@/modules/auth/di', () => ({
 }));
 
 // Import after mock
-const { requireAuth, tokenVerifier, getUserByPrivyIdQuery } =
-  await import('@/modules/auth/server');
+const { requireAuth, tokenVerifier, getUserByPrivyIdQuery } = await import('@/modules/auth/server');
 
 describe('Auth Middleware (requireAuth)', () => {
   beforeEach(() => {

@@ -18,11 +18,15 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ status: tenant.status }, { status: 200 });
-  } catch (error: any) {
-    if (error.message === 'NOT_PROVISIONED') {
-      return NextResponse.json({ error: 'User is not provisioned', code: 'NOT_PROVISIONED' }, { status: 403 });
+  } catch (error: unknown) {
+    const err = error as Error;
+    if (err.message === 'NOT_PROVISIONED') {
+      return NextResponse.json(
+        { error: 'User is not provisioned', code: 'NOT_PROVISIONED' },
+        { status: 403 }
+      );
     }
-    console.error('Error fetching tenant:', error);
+    console.error('Error fetching tenant:', err);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
