@@ -4,28 +4,22 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle, Sparkles, Zap } from 'lucide-react';
 import { usePrivy } from '@/modules/auth/client';
+import { CheckoutService } from '@/app/services/api/checkout.service';
 
 export default function CheckoutSuccessPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const { ready, authenticated, getAccessToken } = usePrivy();
+  const { ready, authenticated } = usePrivy();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     const sessionId = new URLSearchParams(window.location.search).get('session_id');
 
     const verifyCheckout = async () => {
       try {
-        const token = await getAccessToken();
         if (sessionId) {
-          await fetch('/api/checkout/verify', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ session_id: sessionId }),
-          });
+          await CheckoutService.verifySession(sessionId);
         }
       } catch (error) {
         console.error('Error verifying checkout:', error);
@@ -41,7 +35,7 @@ export default function CheckoutSuccessPage() {
     if (ready && authenticated) {
       verifyCheckout();
     }
-  }, [router, ready, authenticated, getAccessToken]);
+  }, [router, ready, authenticated]);
 
   if (!mounted) return null;
 
@@ -50,7 +44,7 @@ export default function CheckoutSuccessPage() {
       <div className="relative">
         {/* Background pulsing glow */}
         <div className="absolute -inset-4 bg-amber-500/20 rounded-full blur-xl animate-pulse"></div>
-        
+
         {/* Main Icon */}
         <div className="relative bg-white p-6 rounded-full shadow-lg border border-amber-100 flex items-center justify-center animate-[bounce_1s_ease-in-out_infinite]">
           <CheckCircle className="w-20 h-20 text-amber-500" />
@@ -66,7 +60,8 @@ export default function CheckoutSuccessPage() {
           Pagamento Confirmado!
         </h1>
         <p className="mt-4 text-lg text-gray-600 max-w-md mx-auto">
-          Bem-vindo ao <span className="font-bold text-amber-600">Plano Profissional</span>. Seus limites foram removidos e seus agentes já estão prontos para escalar.
+          Bem-vindo ao <span className="font-bold text-amber-600">Plano Profissional</span>. Seus
+          limites foram removidos e seus agentes já estão prontos para escalar.
         </p>
       </div>
 

@@ -4,7 +4,7 @@ import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
-import { usePrivy } from '@privy-io/react-auth';
+import { AgentService } from '@/app/services/api/agents.service';
 
 interface EditAgentProps {
   params: Promise<{ agentId: string }>;
@@ -13,7 +13,6 @@ interface EditAgentProps {
 export default function EditAgent({ params }: EditAgentProps) {
   const { agentId } = use(params);
   const router = useRouter();
-  const { getAccessToken } = usePrivy();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,19 +31,7 @@ export default function EditAgent({ params }: EditAgentProps) {
   useEffect(() => {
     const fetchAgentDetails = async () => {
       try {
-        const token = await getAccessToken();
-        const response = await fetch(`/api/agents/${agentId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Falha ao carregar os dados do agente');
-        }
-
-        const data = await response.json();
-        const agent = data.agent;
+        const agent = await AgentService.getAgent(agentId);
 
         setFormData({
           name: agent.name || '',
@@ -64,7 +51,7 @@ export default function EditAgent({ params }: EditAgentProps) {
     };
 
     fetchAgentDetails();
-  }, [agentId, getAccessToken]);
+  }, [agentId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -91,20 +78,7 @@ export default function EditAgent({ params }: EditAgentProps) {
     setError(null);
 
     try {
-      const token = await getAccessToken();
-      const response = await fetch(`/api/agents/${agentId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao atualizar o agente');
-      }
+      await AgentService.updateAgent(agentId, formData);
 
       router.push('/onboarding?success=agent_updated');
     } catch (err: unknown) {

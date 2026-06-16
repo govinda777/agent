@@ -17,6 +17,17 @@ model Tenant {
 
   agents          Agent[]
   users           TenantUser[]
+  events          TenantEvent[]
+}
+
+model TenantEvent {
+  id          String   @id @default(uuid())
+  tenantId    String
+  eventType   String
+  payload     String   // JSON string
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model User {

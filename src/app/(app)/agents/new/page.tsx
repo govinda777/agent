@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { usePrivy } from '@privy-io/react-auth';
+import { ProfileService } from '@/app/services/api/profile.service';
+import { AgentService } from '@/app/services/api/agents.service';
 
 export default function NewAgent() {
   const router = useRouter();
-  const { getAccessToken, ready, authenticated } = usePrivy();
+  const { ready, authenticated } = usePrivy();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<{
@@ -19,19 +21,11 @@ export default function NewAgent() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const token = await getAccessToken();
-        const response = await fetch('/api/profile', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const data = await ProfileService.getProfile();
+        setProfileData({
+          llmProvider: data.llmProvider,
+          hasApiKey: !!data.llmApiKey,
         });
-        if (response.ok) {
-          const data = await response.json();
-          setProfileData({
-            llmProvider: data.llmProvider,
-            hasApiKey: data.hasApiKey,
-          });
-        }
       } catch (error) {
         console.error('Error fetching profile:', error);
       }
@@ -39,7 +33,7 @@ export default function NewAgent() {
     if (ready && authenticated) {
       fetchProfile();
     }
-  }, [ready, authenticated, getAccessToken]);
+  }, [ready, authenticated]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -77,20 +71,7 @@ export default function NewAgent() {
     setError(null);
 
     try {
-      const token = await getAccessToken();
-      const response = await fetch('/api/agents', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao criar o agente');
-      }
+      await AgentService.createAgent(formData);
 
       // Redirect back to dashboard/home after success
       router.push('/?success=agent_created');

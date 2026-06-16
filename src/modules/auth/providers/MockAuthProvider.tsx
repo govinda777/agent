@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AuthProvider } from '../hooks/useAuth';
 import { AuthContextType } from '../domain/AuthContext';
+import { setTokenGetter } from '@/app/services/api/token-manager';
 
 export function MockAuthProvider({ children }: { children: React.ReactNode }) {
   const authValue: AuthContextType = {
@@ -24,6 +25,10 @@ export function MockAuthProvider({ children }: { children: React.ReactNode }) {
     },
     getAccessToken: async () => 'mock-token-e2e-user',
   };
+
+  useEffect(() => {
+    setTokenGetter(async () => 'mock-token-e2e-user');
+  }, []);
 
   return <AuthProvider value={authValue}>{children}</AuthProvider>;
 }

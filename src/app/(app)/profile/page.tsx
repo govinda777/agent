@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Key, Server } from 'lucide-react';
 import { usePrivy } from '@/modules/auth/client';
+import { ProfileService } from '@/app/services/api/profile.service';
 
 export default function ProfilePage() {
-  const { ready, authenticated, getAccessToken } = usePrivy();
+  const { ready, authenticated } = usePrivy();
   const [llmProvider, setLlmProvider] = useState('');
   const [llmApiKey, setLlmApiKey] = useState('');
   const [hasApiKey, setHasApiKey] = useState(false);
@@ -36,23 +37,15 @@ export default function ProfilePage() {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const token = await getAccessToken();
-      const response = await fetch('/api/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.llmProvider) setLlmProvider(data.llmProvider);
-        setHasApiKey(data.hasApiKey);
-      }
+      const data = await ProfileService.getProfile();
+      if (data.llmProvider) setLlmProvider(data.llmProvider);
+      setHasApiKey(!!data.llmApiKey);
     } catch (error) {
       console.error('Error fetching profile', error);
     } finally {
       setIsLoading(false);
     }
-  }, [getAccessToken]);
+  }, []);
 
   useEffect(() => {
     if (ready && authenticated) {
@@ -69,22 +62,10 @@ export default function ProfilePage() {
     setMessage(null);
 
     try {
-      const token = await getAccessToken();
-      const response = await fetch('/api/profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          llmProvider: llmProvider || null,
-          llmApiKey: llmApiKey || null,
-        }),
+      await ProfileService.updateProfile({
+        llmProvider: llmProvider || undefined,
+        llmApiKey: llmApiKey || undefined,
       });
-
-      if (!response.ok) {
-        throw new Error('Falha ao salvar configurações.');
-      }
 
       setMessage({ text: 'Configurações salvas com sucesso!', type: 'success' });
       setLlmApiKey(''); // Limpamos do client state

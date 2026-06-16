@@ -17,10 +17,10 @@ import {
   AlertCircle,
   RefreshCw,
   MessageSquare,
-  ChevronRight,
   Settings,
 } from 'lucide-react';
-import { usePrivy } from '@/modules/auth/client';
+import { AgentService } from '@/app/services/api/agents.service';
+import { TenantService } from '@/app/services/api/tenant.service';
 
 interface Agent {
   id: string;
@@ -34,7 +34,6 @@ interface Agent {
 }
 
 export default function Dashboard() {
-  const { getAccessToken } = usePrivy();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tenantStatus, setTenantStatus] = useState<string>('FREE');
   const [isLoading, setIsLoading] = useState(true);
@@ -68,26 +67,14 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = await getAccessToken();
-        
         // Fetch agents
-        const agentsResponse = await fetch('/api/agents', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (agentsResponse.ok) {
-          const agentsData = await agentsResponse.json();
-          setAgents(agentsData.agents || []);
-        }
+        const agentsData = await AgentService.getAgents();
+        setAgents(agentsData || []);
 
         // Fetch tenant status
-        const tenantResponse = await fetch('/api/tenant', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (tenantResponse.ok) {
-          const tenantData = await tenantResponse.json();
-          if (tenantData.status) {
-            setTenantStatus(tenantData.status);
-          }
+        const tenantData = await TenantService.getStatus();
+        if (tenantData.status) {
+          setTenantStatus(tenantData.status);
         }
       } catch (error) {
         console.error('Failed to fetch data:', error);
@@ -97,7 +84,7 @@ export default function Dashboard() {
     };
 
     fetchData();
-  }, [getAccessToken]);
+  }, []);
 
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto w-full">
@@ -300,7 +287,6 @@ function TypewriterText({
 // CHAT DRAWER COMPONENT (Vercel AI SDK)
 // ==========================================
 function ChatDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
-  const { getAccessToken } = usePrivy();
   const [chatInput, setChatInput] = useState('');
   const [completedMessageIds, setCompletedMessageIds] = useState<Record<string, boolean>>({});
 
@@ -308,7 +294,8 @@ function ChatDrawer({ agent, onClose }: { agent: Agent; onClose: () => void }) {
     transport: new TextStreamChatTransport({
       api: `/api/agents/${agent.id}/chat`,
       headers: async () => {
-        const token = await getAccessToken();
+        const { getAuthToken } = await import('@/app/services/api/token-manager');
+        const token = await getAuthToken();
         return {
           Authorization: `Bearer ${token}`,
         };

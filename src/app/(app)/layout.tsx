@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePrivy } from '@/modules/auth/client';
 import { Loader2 } from 'lucide-react';
+import { TenantService } from '@/app/services/api/tenant.service';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, ready, authenticated, getAccessToken } = usePrivy();
+  const { user, ready, authenticated } = usePrivy();
   const [isClient, setIsClient] = useState(false);
   const [tenantStatus, setTenantStatus] = useState<string>('FREE');
 
@@ -25,24 +26,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const fetchTenantStatus = async () => {
       if (isClient && ready && authenticated) {
         try {
-          const token = await getAccessToken();
-          const response = await fetch('/api/tenant', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          if (response.status === 403) {
-            const data = await response.json();
-            if (data.code === 'NOT_PROVISIONED') {
-              window.location.href = '/sync';
-              return;
-            }
-          }
-
-          if (response.ok) {
-            const data = await response.json();
+          try {
+            const data = await TenantService.getStatus();
             if (data.status) {
               setTenantStatus(data.status);
+            }
+          } catch (err: unknown) {
+            const errorWithStatus = err as { status?: number; data?: { code?: string } };
+            if (
+              errorWithStatus.status === 403 &&
+              errorWithStatus.data?.code === 'NOT_PROVISIONED'
+            ) {
+              window.location.href = '/sync';
+              return;
             }
           }
         } catch (error) {
@@ -51,7 +47,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }
     };
     fetchTenantStatus();
-  }, [isClient, ready, authenticated, getAccessToken]);
+  }, [isClient, ready, authenticated]);
 
   // Show loading on server and initial client render to avoid hydration mismatch
   if (!isClient || !ready || !authenticated) {

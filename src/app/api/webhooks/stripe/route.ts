@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { env } from '@/config/env';
-import { prisma } from '@/lib/prisma';
+import { UpdateTenantStatusCommand } from '@/modules/tenant/commands/update-tenant-status.command';
 
 const stripe = new Stripe(env.stripeSecretKey, {
   apiVersion: '2026-05-27.dahlia',
@@ -23,23 +23,23 @@ export async function POST(request: Request) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
-    
-    // The client_reference_id contains the tenantId
+
     const tenantId = session.client_reference_id;
 
     if (tenantId) {
       try {
-        await prisma.tenant.update({
-          where: { id: tenantId },
-          data: { status: 'ACTIVE' },
+        const command = new UpdateTenantStatusCommand(tenantId, 'ACTIVE', {
+          stripeSessionId: session.id,
         });
-        console.log(`Tenant ${tenantId} updated to ACTIVE`);
+        await command.execute();
       } catch (dbError) {
         console.error('Error updating tenant status:', dbError);
         return new NextResponse('Error updating database', { status: 500 });
       }
     } else {
-      console.warn('Checkout session completed, but no client_reference_id (tenantId) was provided.');
+      console.warn(
+        'Checkout session completed, but no client_reference_id (tenantId) was provided.'
+      );
     }
   }
 

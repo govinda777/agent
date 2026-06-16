@@ -4,11 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePrivy } from '@/modules/auth/client';
 import { Loader2, CheckCircle2 } from 'lucide-react';
-
+import { CheckoutService } from '@/app/services/api/checkout.service';
 
 // TODO: Os produtos deveriam estar cadastrados no projeto e nao na strip pois caso agente mude de GW teremos que cadastrar novamente
 export default function Checkout() {
-  const { user, getAccessToken } = usePrivy();
+  const { user } = usePrivy();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,28 +17,13 @@ export default function Checkout() {
     setError(null);
 
     try {
-      const token = await getAccessToken();
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          productName: 'Plano Profissional',
-          amountInCents: 9700, // TODO: Fazer essa info retornar do BE
-          email: user?.email?.address,
-        }),
+      const data = await CheckoutService.createSession({
+        productName: 'Plano Profissional',
+        amountInCents: 9700,
+        email: user?.email?.address || undefined,
       });
 
-      if (!response.ok) {
-        throw new Error('Falha ao iniciar o checkout');
-      }
-
-      const { url } = await response.json();
-
-      // Redirect to Stripe Checkout
-      window.location.href = url;
+      window.location.href = data.url;
     } catch (err: unknown) {
       console.error(err);
       setError('Ocorreu um erro ao processar o seu pagamento. Tente novamente.');

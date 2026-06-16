@@ -1,13 +1,18 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { PrivyProvider, usePrivy } from '@privy-io/react-auth';
 import { AuthProvider } from '../hooks/useAuth';
 import { AuthContextType } from '../domain/AuthContext';
 import { env } from '@/config/env';
+import { setTokenGetter } from '@/app/services/api/token-manager';
 
 function PrivyConsumer({ children }: { children: React.ReactNode }) {
   const privy = usePrivy();
+
+  useEffect(() => {
+    setTokenGetter(async () => privy.getAccessToken());
+  }, [privy]);
 
   const authValue: AuthContextType = {
     ready: privy.ready,
