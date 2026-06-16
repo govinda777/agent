@@ -30,7 +30,7 @@ interface Agent {
     whatsapp: boolean;
     instagram: boolean;
   };
-  createdAt: string;
+  createdAt?: string;
 }
 
 export default function Dashboard() {
@@ -69,7 +69,17 @@ export default function Dashboard() {
       try {
         // Fetch agents
         const agentsData = await AgentService.getAgents();
-        setAgents(agentsData || []);
+        setAgents(
+          (agentsData || []).map((agent) => ({
+            id: agent.id,
+            name: agent.name,
+            channels: agent.channels || {
+              web: agent.channelWeb,
+              whatsapp: agent.channelWhatsapp,
+              instagram: agent.channelInstagram,
+            },
+          }))
+        );
 
         // Fetch tenant status
         const tenantData = await TenantService.getStatus();
@@ -175,7 +185,9 @@ export default function Dashboard() {
                     <h3 className="text-base font-semibold text-gray-900">{agent.name}</h3>
                     <div className="flex items-center gap-3 mt-1">
                       <span className="text-xs text-gray-500">
-                        Criado a {new Date(agent.createdAt).toLocaleDateString()}
+                        {agent.createdAt
+                          ? `Criado a ${new Date(agent.createdAt).toLocaleDateString()}`
+                          : 'Criado recentemente'}
                       </span>
                       <div className="flex gap-1">
                         {agent.channels.web && (
