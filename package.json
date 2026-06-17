@@ -17,17 +17,17 @@
   "dependencies": {
     "@ai-sdk/react": "3.0.209",
     "@prisma/client": "5.22.0",
-    "@privy-io/react-auth": "^3.31.0",
-    "@privy-io/server-auth": "^1.31.0",
+    "@privy-io/react-auth": "^1.74.1",
+    "@privy-io/server-auth": "^1.17.2",
     "@stripe/stripe-js": "^9.8.0",
     "ai": "^6.0.200",
     "lucide-react": "1.20.0",
-    "next": "16.2.9",
+    "next": "^9.3.3",
     "pg": "^8.21.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "stripe": "22.2.1",
-    "viem": "^2.12.0"
+    "viem": "^0.2.1"
   },
   "devDependencies": {
     "@playwright/test": "1.61.0",
