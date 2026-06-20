@@ -10,18 +10,16 @@ export async function GET(
     const { agentId } = await params;
     const { tenantId } = await requireAuth(request);
 
-    // Verify agent belongs to this tenant
-    const agentCheck = await agentRepository.findById(agentId, tenantId);
-    if (!agentCheck) {
+    // O RLS via requireAuth (db) garante o isolamento.
+    // O agentRepository agora também utiliza RLS internamente.
+    const agent = await agentRepository.findById(agentId, tenantId);
+
+    if (!agent) {
       return NextResponse.json({ error: 'Agente não encontrado' }, { status: 404 });
     }
 
-    // Retrieve decrypted details for the edit form
-    const agent = await agentRepository.getDecryptedById(agentId);
-    
     return NextResponse.json({ agent }, { status: 200 });
-  } catch (error: any) {
-    console.error('Error fetching agent:', error);
+  } catch (_error: unknown) {
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }
@@ -38,13 +36,6 @@ export async function PUT(
     const { tenantId } = await requireAuth(request);
     const body = await request.json();
 
-    // Verify agent belongs to this tenant
-    const agentCheck = await agentRepository.findById(agentId, tenantId);
-    if (!agentCheck) {
-      return NextResponse.json({ error: 'Agente não encontrado' }, { status: 404 });
-    }
-
-    // Update agent properties
     const updatedAgent = await updateAgentUseCase.execute({
       id: agentId,
       tenantId,
@@ -56,8 +47,6 @@ export async function PUT(
       { status: 200 }
     );
   } catch (error: any) {
-    console.error('Error updating agent:', error);
-    
     let status = 500;
     if (error.message.includes('cannot be empty')) status = 400;
 

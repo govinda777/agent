@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Key, Server } from 'lucide-react';
 import { usePrivy } from '@/modules/auth/client';
@@ -14,15 +14,7 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-  useEffect(() => {
-    if (ready && authenticated) {
-      fetchProfile();
-    } else if (ready && !authenticated) {
-      window.location.href = '/login';
-    }
-  }, [ready, authenticated]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const token = await getAccessToken();
       const response = await fetch('/api/profile', {
@@ -40,7 +32,15 @@ export default function ProfilePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [getAccessToken]);
+
+  useEffect(() => {
+    if (ready && authenticated) {
+      void fetchProfile();
+    } else if (ready && !authenticated) {
+      window.location.href = '/login';
+    }
+  }, [ready, authenticated, fetchProfile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
