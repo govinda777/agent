@@ -1,6 +1,6 @@
 import { getPrismaWithRLS } from '@/lib/prisma';
 import { IEvent } from './types';
-import { eventBus } from './EventBus';
+import { durableBus } from './DurableBus';
 import { JsonValue } from '@prisma/client/runtime/library';
 
 /**
@@ -11,14 +11,14 @@ import { JsonValue } from '@prisma/client/runtime/library';
  */
 export class EventStore {
   /**
-   * Persiste um novo evento no banco e o publica no EventBus.
+   * Persiste um novo evento no banco e o propaga via Broker Durável.
    *
-   * @param event O evento a ser gravado (deve conter tenantId e aggregateId)
+   * @param event O evento a ser gravado.
    */
   static async append(event: IEvent) {
     const db = getPrismaWithRLS(event.tenantId);
 
-    // 1. Grava no Postgres (Single Source of Truth)
+    // 1. Grava no Postgres (Single Source of Truth) - Bloco Síncrono Obrigatório
     const storedEvent = await db.eventStore.create({
       data: {
         tenantId: event.tenantId,
@@ -29,7 +29,6 @@ export class EventStore {
       }
     });
 
-    // 2. Transforma para o formato de barramento
     const busEvent: IEvent = {
         tenantId: storedEvent.tenantId,
         aggregateType: storedEvent.aggregateType,
@@ -39,8 +38,10 @@ export class EventStore {
         createdAt: storedEvent.createdAt
     };
 
-    // 3. Propaga para Projeções e Side-Effects
-    await eventBus.publish(busEvent);
+    // 2. Propaga via Mensageria Durável (Upstash QStash)
+    // O processamento de Projeções e Side Effects ocorre fora do ciclo de vida desta requisição.
+    // Isso garante latência mínima para o usuário e resiliência total.
+    await durableBus.publish(busEvent);
 
     return storedEvent;
   }

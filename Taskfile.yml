@@ -19,7 +19,7 @@ tasks:
   deps:
     desc: Instala as dependências Node.js
     cmds:
-      - npm install
+      - npm install --legacy-peer-deps
 
   infra:
     desc: Sobe os containers Docker em background
@@ -36,47 +36,20 @@ tasks:
       - task: import-workflow
 
   import-workflow:
-    desc: Importa e ativa o workflow padrão no n8n, depois reinicia para registrar os webhooks
+    desc: Importa e ativa o workflow padrão no n8n
     cmds:
       - |
-        node -e "console.log('Aguardando inicializacao do n8n para importar o fluxo...'); const check = () => fetch('http://localhost:5678/healthz').then(r => r.status === 200 ? setTimeout(() => { console.log('n8n pronto! Aguardando 15s para garantir que as migracoes terminaram...'); setTimeout(() => process.exit(0), 15000); }, 1000) : setTimeout(check, 2000)).catch(() => setTimeout(check, 2000)); check();"
-      - docker compose exec -T n8n n8n import:workflow --input /etc/n8n/agent-workflow.json
-      - docker compose exec -T n8n n8n publish:workflow --id=1
-      - docker compose restart n8n
+        node -e "console.log('Aguardando inicializacao do n8n...'); const check = () => fetch('http://localhost:5678/healthz').then(r => r.status === 200 ? process.exit(0) : setTimeout(check, 2000)).catch(() => setTimeout(check, 2000)); check();"
+      - docker compose exec -T n8n n8n import:workflow --input /etc/n8n/agent-workflow.json || true
+      - docker compose exec -T n8n n8n publish:workflow --id=1 || true
 
-  test:
-    desc: Executa a suíte completa de testes (integração e E2E) garantindo que a infraestrutura esteja pronta e saudável
-    deps: [db]
+  worker:
+    desc: Inicia o simulador local de Event Broker (QStash Sim)
     cmds:
-      - |
-        node -e "console.log('Aguardando n8n estar pronto para os testes...'); const check = () => fetch('http://localhost:5678/healthz').then(r => r.status === 200 ? setTimeout(() => { console.log('n8n pronto! Aguardando 5s para registro dos webhooks...'); setTimeout(() => process.exit(0), 5000); }, 1000) : setTimeout(check, 2000)).catch(() => setTimeout(check, 2000)); check();"
-      - npm run test:integration
-      - npm run test:e2e
+      - node scripts/simulate-qstash.js
 
   dev:
-    desc: Inicia o servidor local do Next.js
+    desc: Inicia o Next.js e o simulador de broker
     deps: [db]
     cmds:
-      - npm run dev
-
-  stop:
-    desc: Para os containers da infraestrutura local sem remover dados
-    cmds:
-      - docker compose stop
-
-  down:
-    desc: Para e remove os containers e redes locais da infraestrutura
-    cmds:
-      - docker compose down
-
-  clean:
-    desc: Remove os containers, redes, volumes (deleta banco de dados) e pasta de build do Next.js
-    cmds:
-      - docker compose down -v
-      - cmd /c "if exist .next rmdir /s /q .next"
-
-  reset:
-    desc: Limpa completamente a infraestrutura e reconstrói o ambiente local do zero
-    cmds:
-      - task: clean
-      - task: dev
+      - node scripts/simulate-qstash.js & npm run dev

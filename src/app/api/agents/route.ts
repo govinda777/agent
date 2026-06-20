@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { createAgentCommandHandler } from '@/modules/agents/commands/CreateAgentCommand';
-import { initAgentProjections } from '@/modules/agents/projections/AgentProjectionHandler';
 import { getPrismaWithRLS } from '@/lib/prisma';
 
-// Inicializa o handler de projeção
-initAgentProjections();
-
+/**
+ * AGENTS API: PURE COMMAND FLOW
+ *
+ * Sem inicializações de projeção (movidas para o Webhook Worker).
+ */
 export async function POST(request: Request) {
   try {
     const headersList = await headers();
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    // Despacha Comando
+    // Despacha Comando (Gera evento na EventStore -> QStash)
     const agentId = await createAgentCommandHandler.execute({
       tenantId,
       ...body
