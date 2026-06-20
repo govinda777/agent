@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { prisma } from '@/lib/prisma';
+import { prisma, getPrismaWithRLS } from '@/lib/prisma';
 import { Agent } from '../domain/Agent';
 import { IAgentRepository } from '../repositories/IAgentRepository';
 import { env } from '@/config/env';
@@ -34,25 +34,6 @@ function decrypt(text: string): string {
   }
 }
 
-// Ensure tenant exists for MVP
-async function ensureTenant(tenantId: string) {
-  let tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
-  if (!tenant) {
-    const trialDays = env.freePlanTrialDays;
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
-    
-    tenant = await prisma.tenant.create({
-      data: {
-        id: tenantId,
-        status: 'FREE',
-        trialEndsAt,
-      }
-    });
-  }
-  return tenant;
-}
-
 export class PrismaAgentRepository implements IAgentRepository {
   
   private mapToDomain(dbAgent: any): Agent {
@@ -71,9 +52,9 @@ export class PrismaAgentRepository implements IAgentRepository {
   }
 
   async save(tenantId: string, agentData: Omit<Agent, 'id' | 'createdAt'>): Promise<Agent> {
-    await ensureTenant(tenantId);
+    const db = getPrismaWithRLS(tenantId);
     
-    const created = await prisma.agent.create({
+    const created = await db.agent.create({
       data: {
         name: agentData.name,
         n8nWebhookUrl: agentData.n8nWebhookUrl,
@@ -88,13 +69,14 @@ export class PrismaAgentRepository implements IAgentRepository {
   }
 
   async findAll(tenantId: string): Promise<Agent[]> {
-    await ensureTenant(tenantId);
-    const agents = await prisma.agent.findMany({ where: { tenantId } });
+    const db = getPrismaWithRLS(tenantId);
+    const agents = await db.agent.findMany();
     return agents.map(this.mapToDomain);
   }
 
   async findById(id: string, tenantId: string): Promise<Agent | null> {
-    const agent = await prisma.agent.findFirst({ where: { id, tenantId } });
+    const db = getPrismaWithRLS(tenantId);
+    const agent = await db.agent.findFirst({ where: { id } });
     return agent ? this.mapToDomain(agent) : null;
   }
 
@@ -108,9 +90,14 @@ export class PrismaAgentRepository implements IAgentRepository {
   }
 
   async getTenantDetails(tenantId: string) {
-    const tenant = await ensureTenant(tenantId);
-    const count = await prisma.agent.count({ where: { tenantId } });
+    const db = getPrismaWithRLS(tenantId);
+    const [tenant, count] = await Promise.all([
+      db.tenant.findUnique({ where: { id: tenantId } }),
+      db.agent.count()
+    ]);
     
+    if (!tenant) throw new Error('Tenant not found');
+
     return {
       status: tenant.status,
       trialEndsAt: tenant.trialEndsAt,
@@ -120,13 +107,15 @@ export class PrismaAgentRepository implements IAgentRepository {
   }
 
   async incrementExecutions(tenantId: string): Promise<void> {
-    await prisma.tenant.update({
+    const db = getPrismaWithRLS(tenantId);
+    await db.tenant.update({
       where: { id: tenantId },
       data: { executionsUsed: { increment: 1 } }
     });
   }
 
   async update(id: string, tenantId: string, agentData: Partial<Agent>): Promise<Agent> {
+    const db = getPrismaWithRLS(tenantId);
     const updateData: any = {};
     if (agentData.name !== undefined) updateData.name = agentData.name;
     if (agentData.n8nWebhookUrl !== undefined) updateData.n8nWebhookUrl = agentData.n8nWebhookUrl;
@@ -140,8 +129,8 @@ export class PrismaAgentRepository implements IAgentRepository {
       if (agentData.channels.instagram !== undefined) updateData.channelInstagram = agentData.channels.instagram;
     }
 
-    const updated = await prisma.agent.update({
-      where: { id, tenantId },
+    const updated = await db.agent.update({
+      where: { id },
       data: updateData
     });
     return this.mapToDomain(updated);

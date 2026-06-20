@@ -7,7 +7,6 @@ import { usePrivy } from '@privy-io/react-auth';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { env } from '@/config/env';
 
-// TODO: Os produtos deveriam estar cadastrados no projeto e nao na strip pois caso agente mude de GW teremos que cadastrar novamente
 export default function Checkout() {
   const { user } = usePrivy();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,7 +37,7 @@ export default function Checkout() {
       
       // Redirect to Stripe Checkout
       window.location.href = url;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setError('Ocorreu um erro ao processar o seu pagamento. Tente novamente.');
       setIsSubmitting(false);
