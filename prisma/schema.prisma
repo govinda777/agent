@@ -7,9 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model EventStore {
+  id            String   @id @default(uuid())
+  tenantId      String
+  aggregateType String   // AGENT, TENANT, EXECUTION
+  aggregateId   String
+  eventType     String   // AgentCreated, AgentExecutionStarted, etc.
+  payload       Json
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([aggregateId])
+  @@index([aggregateType, aggregateId])
+}
+
 model Tenant {
   id              String    @id @default(uuid())
-  status          String    @default("FREE") // FREE, ACTIVE, SUSPENDED
+  status          String    @default("FREE") // FREE, ACTIVE, SUSPENDED, OVER_BUDGET
   trialEndsAt     DateTime
   executionsUsed  Int       @default(0)
   createdAt       DateTime  @default(now())
@@ -61,4 +75,19 @@ model Agent {
 
   tenantId        String
   tenant          Tenant    @relation(fields: [tenantId], references: [id])
+}
+
+// Projeção de Execuções para leitura rápida
+model ExecutionProjection {
+  id              String    @id
+  tenantId        String
+  agentId         String
+  status          String    // PENDING, RUNNING, COMPLETED, FAILED
+  currentStep     String?
+  result          Json?
+  startedAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([agentId])
 }

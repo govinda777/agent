@@ -1,47 +1,53 @@
 import { NextResponse } from 'next/server';
-import { createAgentUseCase, getAgentsUseCase } from '@/modules/agents/di';
-import { requireAuth } from '@/modules/auth/server';
+import { headers } from 'next/headers';
+import { createAgentCommandHandler } from '@/modules/agents/commands/CreateAgentCommand';
+import { getPrismaWithRLS } from '@/lib/prisma';
 
+/**
+ * AGENTS API: PURE COMMAND FLOW
+ *
+ * Sem inicializações de projeção (movidas para o Webhook Worker).
+ */
 export async function POST(request: Request) {
   try {
+    const headersList = await headers();
+    const tenantId = headersList.get('x-tenant-id');
+
+    if (!tenantId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
 
-    const { tenantId } = await requireAuth(request);
-
-    const newAgent = await createAgentUseCase.execute({
-      ...body,
+    // Despacha Comando (Gera evento na EventStore -> QStash)
+    const agentId = await createAgentCommandHandler.execute({
       tenantId,
+      ...body
     });
 
-    return NextResponse.json(
-      { message: 'Agent created successfully', agent: { id: newAgent.id, name: newAgent.name } },
-      { status: 201 }
-    );
-  } catch (error: any) {
-    console.error('Error creating agent:', error);
-    
-    let status = 500;
-    if (error.message === 'Name and Webhook URL are required') status = 400;
-    if (error.message.includes('Limite de agentes atingido')) status = 403;
+    return NextResponse.json({ success: true, agentId }, { status: 201 });
 
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status }
-    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { tenantId } = await requireAuth(request);
-    
-    const agents = await getAgentsUseCase.execute(tenantId);
-    return NextResponse.json({ agents }, { status: 200 });
-  } catch (error) {
-    console.error('Error fetching agents:', error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
-    );
+    const headersList = await headers();
+    const tenantId = headersList.get('x-tenant-id');
+
+    if (!tenantId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const db = getPrismaWithRLS(tenantId);
+    const agents = await db.agent.findMany();
+
+    return NextResponse.json(agents);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

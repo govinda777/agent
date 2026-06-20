@@ -1,14 +1,13 @@
 import { PrismaAgentRepository } from './infrastructure/PrismaAgentRepository';
-import { CreateAgentUseCase } from './useCases/CreateAgentUseCase';
-import { GetAgentsUseCase } from './useCases/GetAgentsUseCase';
-import { ProcessAgentChatUseCase } from './useCases/ProcessAgentChatUseCase';
-import { UpdateAgentUseCase } from './useCases/UpdateAgentUseCase';
 
-// Single repository instance (Composition Root)
+/**
+ * COMPOSITION ROOT: 2026 REFACTORED
+ *
+ * Agora focada em Repositórios e Infraestrutura de suporte ao CQRS.
+ * UseCases legados foram substituídos por Command Handlers.
+ */
+
 export const agentRepository = new PrismaAgentRepository();
 
-// Use cases initialized with the repository instance (Constructor Injection)
-export const createAgentUseCase = new CreateAgentUseCase(agentRepository);
-export const getAgentsUseCase = new GetAgentsUseCase(agentRepository);
-export const processAgentChatUseCase = new ProcessAgentChatUseCase(agentRepository);
-export const updateAgentUseCase = new UpdateAgentUseCase(agentRepository);
+// Os Command Handlers são exportados diretamente de seus respectivos arquivos
+// para evitar dependências circulares pesadas no Composition Root.

@@ -1,98 +1,73 @@
 import { tokenVerifier } from '../di';
-import { prisma } from '@/lib/prisma';
+import { prisma, getPrismaWithRLS } from '@/lib/prisma';
 
+/**
+ * REQUIRE AUTH 2026: AGNOSTIC & SECURE
+ *
+ * Esta função agora confia na validação inicial feita na Edge (Proxy).
+ * Ela extrai o tenantId e userId, garantindo o isolamento via Neon RLS.
+ */
 export async function requireAuth(request: Request) {
   const authHeader = request.headers.get('authorization');
+  const tenantId = request.headers.get('x-tenant-id');
+
   if (!authHeader?.startsWith('Bearer ')) {
     throw new Error('Missing or invalid authorization header');
+  }
+
+  if (!tenantId) {
+    throw new Error('Tenant identification is required in 2026 architecture');
   }
 
   const token = authHeader.split(' ')[1];
   let privyId: string;
 
   try {
+    // Validação criptográfica do Token
     privyId = await tokenVerifier.verifyToken(token);
-  } catch (error) {
+  } catch (_error: unknown) {
     throw new Error('Invalid or expired token');
   }
 
-  // Find or create User and ensure they have a Tenant
-  let user = await prisma.user.findUnique({
-    where: { privyId },
-    include: { tenants: { include: { tenant: true } } },
+  /**
+   * ACESSO AO BANCO COM RLS
+   */
+  const db = getPrismaWithRLS(tenantId);
+
+  // Busca o usuário no contexto do tenant
+  let tenantUser = await db.tenantUser.findFirst({
+    where: { user: { privyId }, tenantId },
+    include: { user: true },
   });
 
-  if (!user) {
-    const existingTenant = await prisma.tenant.findFirst();
+  // Fallback: Se o usuário existe mas não está vinculado a este tenant
+  if (!tenantUser) {
+    // 1. Verifica se o usuário existe globalmente
+    let user = await prisma.user.findUnique({ where: { privyId } });
 
-    if (existingTenant) {
-      user = await prisma.user.create({
-        data: {
-          privyId,
-          tenants: {
-            create: {
-              tenantId: existingTenant.id,
-              role: 'OWNER',
-            },
-          },
-        },
-        include: { tenants: { include: { tenant: true } } },
-      });
-    } else {
-      user = await prisma.user.create({
-        data: {
-          privyId,
-          tenants: {
-            create: {
-              role: 'OWNER',
-              tenant: {
-                create: {
-                  trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
-                },
-              },
-            },
-          },
-        },
-        include: { tenants: { include: { tenant: true } } },
-      });
+    if (!user) {
+      user = await prisma.user.create({ data: { privyId } });
     }
-  } else if (user.tenants.length === 0) {
-    const newTenant = await prisma.tenant.create({
-      data: {
-        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-      }
-    });
-    await prisma.tenantUser.create({
-      data: {
-        userId: user.id,
-        tenantId: newTenant.id,
-        role: 'OWNER'
-      }
-    });
-    user = await prisma.user.findUnique({
-      where: { privyId },
-      include: { tenants: { include: { tenant: true } } },
-    }) as any;
-  }
 
-  if (!user) {
-    throw new Error('User not found or created successfully');
-  }
-
-  const requestedTenantId = request.headers.get('x-tenant-id');
-  let activeTenantId = user.tenants[0].tenantId;
-
-  if (requestedTenantId) {
-    const hasAccess = user.tenants.some((t: any) => t.tenantId === requestedTenantId);
-    if (!hasAccess) {
-      throw new Error('User does not have access to the requested tenant');
+    // 2. Vincula ao tenant
+    try {
+        tenantUser = await db.tenantUser.create({
+            data: {
+                userId: user.id,
+                tenantId: tenantId,
+                role: 'MEMBER'
+            },
+            include: { user: true }
+        });
+    } catch (_e) {
+        throw new Error('Could not link user to tenant. Ensure tenant exists.');
     }
-    activeTenantId = requestedTenantId;
   }
 
   return {
-    userId: user.id,
-    privyId: user.privyId,
-    tenantId: activeTenantId,
+    userId: tenantUser.user.id,
+    privyId: tenantUser.user.privyId,
+    tenantId: tenantId,
+    db,
   };
 }
