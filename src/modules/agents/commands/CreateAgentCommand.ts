@@ -1,6 +1,6 @@
 import { ICommand, ICommandHandler } from '@/lib/cqrs/types';
 import { EventStore } from '@/lib/cqrs/EventStore';
-import { crypto } from 'crypto';
+import * as nodeCrypto from 'crypto';
 
 export interface CreateAgentCommand extends ICommand {
   name: string;
@@ -15,7 +15,16 @@ export interface CreateAgentCommand extends ICommand {
 
 export class CreateAgentCommandHandler implements ICommandHandler<CreateAgentCommand> {
   async execute(command: CreateAgentCommand): Promise<string> {
-    const agentId = crypto.randomUUID();
+    // VALIDAÇÃO DE DOMÍNIO 2026
+    if (!command.name || command.name.length < 3) {
+      throw new Error('O nome do agente deve ter pelo menos 3 caracteres.');
+    }
+
+    if (!command.n8nWebhookUrl.startsWith('https://')) {
+      throw new Error('A URL do webhook deve ser segura (HTTPS).');
+    }
+
+    const agentId = nodeCrypto.randomUUID();
 
     // Grava o evento na EventStore
     await EventStore.append({
@@ -26,7 +35,7 @@ export class CreateAgentCommandHandler implements ICommandHandler<CreateAgentCom
       payload: {
         name: command.name,
         n8nWebhookUrl: command.n8nWebhookUrl,
-        n8nAuthToken: command.n8nAuthToken, // Em produção, criptografar antes de postar o evento ou no handler
+        n8nAuthToken: command.n8nAuthToken,
         channels: command.channels,
         timestamp: new Date().toISOString()
       }

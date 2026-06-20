@@ -1,6 +1,6 @@
 import { ICommand, ICommandHandler } from '@/lib/cqrs/types';
 import { EventStore } from '@/lib/cqrs/EventStore';
-import { crypto } from 'crypto';
+import * as nodeCrypto from 'crypto';
 
 export interface ExecuteAgentCommand extends ICommand {
   agentId: string;
@@ -10,7 +10,7 @@ export interface ExecuteAgentCommand extends ICommand {
 
 export class ExecuteAgentCommandHandler implements ICommandHandler<ExecuteAgentCommand> {
   async execute(command: ExecuteAgentCommand): Promise<string> {
-    const executionId = crypto.randomUUID();
+    const executionId = nodeCrypto.randomUUID();
 
     // 1. Grava o evento inicial de solicitação de execução
     await EventStore.append({
