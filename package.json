@@ -16,12 +16,13 @@
   },
   "dependencies": {
     "@ai-sdk/react": "3.0.209",
-    "@prisma/client": "5.22.0",
+    "@lit/reactive-element": "^2.0.4",
+    "@prisma/client": "^5.22.0",
     "@privy-io/react-auth": "^1.74.1",
     "@privy-io/server-auth": "^1.17.2",
     "@stripe/stripe-js": "^9.8.0",
-    "ai": "^6.0.200",
-    "lucide-react": "1.20.0",
+    "ai": "^6.0.207",
+    "lucide-react": "^1.20.0",
     "next": "^14.2.0",
     "pg": "^8.21.0",
     "react": "18.3.1",
@@ -30,6 +31,7 @@
     "viem": "^0.2.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.25.2",
     "@playwright/test": "1.61.0",
     "@tailwindcss/postcss": "4.3.1",
     "@testing-library/dom": "^10.4.1",
@@ -38,7 +40,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@babel/core": "^7.25.2",
     "@vitest/ui": "4.1.9",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.35",
