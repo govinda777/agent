@@ -4,16 +4,24 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { usePrivy } from '@/modules/auth/client';
+import { useSearchParams } from 'next/navigation';
+export const dynamic = 'force-dynamic';
 
 export default function Login() {
   const { login, ready, authenticated } = usePrivy();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (ready && authenticated) {
-      router.push('/onboarding');
+      const redirectParam = searchParams.get('redirect_to') ?? '/onboarding';
+      // If the redirect does not already contain a tenant segment, prepend the default tenant ID.
+      const defaultTenant = 'd1b00000-0000-0000-0000-000000000000';
+      const hasTenant = /^\/[a-f0-9-]+/.test(redirectParam);
+      const finalRedirect = hasTenant ? redirectParam : `/${defaultTenant}${redirectParam.startsWith('/') ? '' : '/'}${redirectParam}`;
+      router.push(finalRedirect);
     }
-  }, [ready, authenticated, router]);
+  }, [ready, authenticated, router, searchParams]);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 items-center justify-center p-6">
@@ -30,10 +38,10 @@ export default function Login() {
 
           <button
             onClick={login}
-            disabled={!ready}
+            disabled={!ready || authenticated}
             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {ready ? 'Entrar / Registrar com Privy' : 'Carregando...'}
+            {!ready ? 'Carregando...' : authenticated ? 'Redirecionando...' : 'Entrar / Registrar com Privy'}
           </button>
         </div>
 

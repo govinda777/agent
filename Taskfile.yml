@@ -15,6 +15,8 @@ tasks:
       - echo "" >> .env
       - echo "# Banco de Dados Local" >> .env
       - echo 'DATABASE_URL="postgresql://postgres:password@localhost:5432/agent1_db?schema=public"' >> .env
+      - echo 'UPSTASH_REDIS_REST_URL="http://localhost:8079"' >> .env
+      - echo 'UPSTASH_REDIS_REST_TOKEN="example_token"' >> .env
 
   deps:
     desc: Instala as dependências Node.js
@@ -53,3 +55,25 @@ tasks:
     deps: [db]
     cmds:
       - node scripts/simulate-qstash.js & npm run dev
+
+  stop:
+    desc: Para os containers da infraestrutura local sem remover dados
+    cmds:
+      - docker compose stop
+
+  down:
+    desc: Para e remove os containers e redes locais da infraestrutura
+    cmds:
+      - docker compose down
+
+  clean:
+    desc: Remove os containers, redes, volumes (deleta banco de dados) e pasta de build do Next.js
+    cmds:
+      - docker compose down -v
+      - cmd /c "if exist .next rmdir /s /q .next"
+
+  reset:
+    desc: Limpa completamente a infraestrutura e reconstrói o ambiente local do zero
+    cmds:
+      - task: clean
+      - task: dev

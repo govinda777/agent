@@ -9,6 +9,20 @@ import { env } from '@/config/env';
 function PrivyConsumer({ children }: { children: React.ReactNode }) {
   const privy = usePrivy();
 
+  React.useEffect(() => {
+    if (privy.ready) {
+      if (privy.authenticated) {
+        privy.getAccessToken().then((token) => {
+          if (token) {
+            document.cookie = `privy-token=${token}; path=/; max-age=3600; SameSite=Lax`;
+          }
+        });
+      } else {
+        document.cookie = 'privy-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/;';
+      }
+    }
+  }, [privy.ready, privy.authenticated, privy]);
+
   const authValue: AuthContextType = {
     ready: privy.ready,
     authenticated: privy.authenticated,
@@ -25,7 +39,7 @@ function PrivyConsumer({ children }: { children: React.ReactNode }) {
 }
 
 export function RealAuthProvider({ children }: { children: React.ReactNode }) {
-  const appId = env.privyAppIdPublic;
+  const appId = env.privyAppId;
 
   if (!appId) {
     const fallbackValue: AuthContextType = {

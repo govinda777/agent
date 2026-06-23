@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { usePrivy } from '@privy-io/react-auth';
 import {
   Bot,
@@ -30,8 +30,9 @@ export default function OnboardingPage() {
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
 
   // Vercel AI SDK
+  const { tenantId } = useParams();
   const { messages, input: chatInput, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: selectedAgent ? `/api/agents/${selectedAgent.id}/chat` : undefined,
+    api: selectedAgent ? `/api/agents/${selectedAgent.id}/chat${tenantId ? `?tenant=${tenantId}` : ''}` : undefined,
     initialMessages: [
       { id: '1', role: 'assistant', content: 'Olá! Selecione um agente ao lado para começar a conversar.' }
     ]
@@ -91,7 +92,7 @@ export default function OnboardingPage() {
             Meus Agentes
           </h2>
           <button
-            onClick={() => router.push('/agents/new')}
+            onClick={() => router.push(`/${tenantId ? tenantId : ''}/agents/new`)}
             className="p-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -226,7 +227,7 @@ export default function OnboardingPage() {
               />
               <button
                 type="submit"
-                disabled={!chatInput.trim() || isLoading}
+                disabled={!chatInput?.trim() || isLoading}
                 className="w-10 h-10 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-full flex items-center justify-center transition-colors shadow-md shrink-0"
               >
                 <Send className="w-4 h-4" />

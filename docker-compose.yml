@@ -67,7 +67,30 @@ services:
       - "12111:12111"  # HTTP
       - "12112:12112"  # HTTPS
 
+  # Redis para cache local e rate limiting
+  redis:
+    image: redis:alpine
+    container_name: agent1-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Proxy REST compatível com Upstash Redis
+  upstash-local:
+    image: hiett/serverless-redis-http:latest
+    container_name: agent1-redis-rest-proxy
+    ports:
+      - "8079:80"
+    environment:
+      - SRH_MODE=env
+      - SRH_TOKEN=example_token
+      - SRH_CONNECTION_STRING=redis://redis:6379
+    depends_on:
+      - redis
+
 volumes:
   postgres_data:
   n8n_postgres_data:
   n8n_data:
+  redis_data:

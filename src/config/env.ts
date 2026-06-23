@@ -2,7 +2,6 @@ export const env = {
   // Public
   stripeProPriceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID as string,
   stripeConsultingPriceId: process.env.NEXT_PUBLIC_STRIPE_CONSULTING_PRICE_ID as string,
-  privyAppIdPublic: process.env.NEXT_PUBLIC_PRIVY_APP_ID as string,
   freePlanMaxAgents: Number(process.env.NEXT_PUBLIC_FREE_PLAN_MAX_AGENTS),
   freePlanChannels: process.env.NEXT_PUBLIC_FREE_PLAN_CHANNELS as string,
 

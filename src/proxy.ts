@@ -28,7 +28,9 @@ export async function proxy(request: NextRequest) {
 
   // 2. IDENTIFICAÇÃO DO TENANT
   let tenantId: string | null = null;
-  const baseDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || 'localhost:3000';
+  const baseDomainRaw = process.env.NEXT_PUBLIC_APP_DOMAIN || 'localhost:3000';
+  // Remove a porta do domínio base para comparação com o hostname (que nunca possui porta)
+  const baseDomain = baseDomainRaw.split(':')[0];
 
   // Suporte a subdomínios e localtest.me
   if (hostname.endsWith(baseDomain) && hostname !== baseDomain) {
@@ -38,6 +40,21 @@ export async function proxy(request: NextRequest) {
 
   if (!tenantId) {
     tenantId = request.headers.get('x-tenant-id');
+  }
+
+  // Se for uma rota de tenant mas nenhum tenant foi detectado (acesso direto via localhost sem subdomínio),
+  // usamos o tenant padrão seedado no banco de dados para evitar 404.
+  if (!tenantId) {
+    const isTenantRoute =
+      pathname.startsWith('/onboarding') ||
+      pathname.startsWith('/profile') ||
+      pathname.startsWith('/checkout') ||
+      pathname.startsWith('/agents') ||
+      pathname.startsWith('/api/agents');
+
+    if (isTenantRoute) {
+      tenantId = 'd1b00000-0000-0000-0000-000000000000';
+    }
   }
 
   // 3. RATE LIMITING (Global por IP na Edge)
@@ -82,6 +99,10 @@ export async function proxy(request: NextRequest) {
 
   // 5. PROTEÇÃO DE ROTAS
   const token = request.cookies.get('privy-token');
+  
+  if (pathname.startsWith('/api/') && tenantId) {
+    response.headers.set('x-tenant-id', tenantId);
+  }
   const isProtectedRoute =
     pathname.includes('onboarding') ||
     pathname.includes('profile') ||

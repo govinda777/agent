@@ -2,7 +2,7 @@ import { Redis } from '@upstash/redis';
 
 /**
  * Cliente Redis para uso na Edge Runtime.
- * Utiliza variáveis de ambiente para conexão com o Upstash.
+ * Utiliza variáveis de ambiente para conexão com o Upstash (ou proxy local no Docker).
  */
 export const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || '',
