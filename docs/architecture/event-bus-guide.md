@@ -1,24 +1,27 @@
-# Funcionamento do Durable Event Bus & Event Sourcing
+# ⚡ Event Bus & Event Sourcing Guide (2026)
 
-Nesta arquitetura 2026, a comunicação entre o domínio de escrita e as projeções é **totalmente assíncrona e resiliente**.
+## Visão Geral
+Nesta arquitetura, a **EventStore** é a única fonte da verdade. O estado atual dos Tenants e Agentes é uma projeção derivada da sequência de eventos imutáveis.
 
-## 🔄 O Ciclo de Vida de um Evento (Durable Flow)
+## Fluxo de um Comando
+1. **Command**: Recebe a intenção do usuário (ex: `CreateTenantCommand`).
+2. **Handler**: Valida a regra de negócio e registra o fato.
+3. **EventStore.append()**:
+   - Salva o evento no PostgreSQL.
+   - Publica no `eventBus` (Síncrono/In-memory).
+   - Publica no `durableBus` (Assíncrono via QStash).
+4. **Projectors**: Escutam o `eventBus` e atualizam as tabelas de leitura (`Tenant`, `Agent`, etc.).
 
-1.  **Comando Despachado:** Uma API Route recebe uma intenção e chama um Command Handler.
-2.  **Persistência Síncrona:** O Handler grava o evento na tabela `EventStore` (Postgres/Neon).
-    - Esta é a única parte síncrona que bloqueia a resposta da API.
-3.  **Despacho para Broker:** O `EventStore` envia o evento para o **Upstash QStash**.
-4.  **Resposta Imediata:** A API retorna `201 Created` ou o ID da execução para o usuário final (Latência ultra-baixa).
-5.  **Entrega via Webhook:** O QStash faz uma chamada POST para `/api/webhooks/projections`.
-    - Se falhar, o broker tenta novamente com exponential backoff.
-6.  **Processamento de Projeções:** O Webhook Worker inicializa os Handlers e atualiza:
-    - **Read Models:** Tabelas no Postgres para consulta rápida.
-    - **Edge Cache:** Upstash Redis para governança na borda.
+## Eventos Implementados
+- `UserLoggedIn`: Registra a autenticação do usuário.
+- `TenantCreated`: Provisionamento de novo espaço de trabalho.
+- `TenantUserAssociated`: Vínculo de permissão entre Usuário e Tenant.
+- `CheckoutStarted`: Início do fluxo de pagamento no Stripe.
+- `CheckoutCompleted`: Confirmação de pagamento e upgrade de plano.
+- `AgentCreated`: Criação de novo agente de IA.
 
-## ⚖️ Consistência Eventual
-O sistema segue o princípio da **Consistência Eventual**. Isso significa que após criar um agente, ele pode levar alguns milissegundos (tempo do webhook) para aparecer na lista. Isso é compensado pela escalabilidade infinita e resiliência a falhas parciais.
+## Idempotência
+Para webhooks externos (Stripe), usamos a coluna `externalEventId` na `EventStore`. O banco de dados garante via constraint UNIQUE que o mesmo evento não seja processado duas vezes, garantindo a consistência do faturamento.
 
-## 🛠️ Como Adicionar um Novo Evento
-1. Defina o evento em `src/modules/[domain]/events/`.
-2. Publique-o no seu Command Handler via `EventStore.append()`.
-3. Garanta que o handler de reação esteja registrado no Webhook Worker (`/api/webhooks/projections/route.ts`).
+## Segurança e RLS
+Cada evento na `EventStore` possui um `tenantId`. Graças ao **Neon RLS**, nenhum Projector ou Query pode ler eventos de um tenant que não pertence à sessão ativa.

@@ -1,58 +1,68 @@
-# User Journey Documentation
+# 📚 User Journey & Architecture Documentation
 
-**Overview**
-This document describes the complete user flow for the **Agent Management Platform**, from the initial landing page through checkout and the final post‑purchase dashboard. Each step is numbered to match the flow you provided.
-
----
-
-## Journey Steps
-
-| # | Page / Screen | Primary Actions | Notes |
-|---|---------------|-----------------|-------|
-| **0** | **Home** | • Landing page – overview of the product.<br>• Call‑to‑action buttons (Login / Sign‑up). | First impression; should showcase key benefits and branding. |
-| **1** | **Login** | • Enter email & password.<br>• “Forgot password?” link.<br>• Successful login redirects to Dashboard. | Validation errors displayed inline; remember‑me option optional. |
-| **2** | **Dashboard – List Agents** | • Table or card view of existing agents.<br>• Search / filter by tenant, status, etc.<br>• Buttons: **View / Edit** for each agent. | Acts as the central hub; should load quickly (≈ ≤ 2 s). |
-| **2.1** | **Agent Detail (Tenant‑specific)** | • Interaction area to **talk with the agent** (chat UI).<br>• **Edit** button opens the agent editor. | UI may include a history pane, quick‑reply suggestions, and a “Save changes” action. |
-| **3** | **Create New Agent** | • Form fields: name, description, tenant, model, initial prompt.<br>• “Create” button → redirects to Dashboard (new agent appears). | Validation for required fields; optional advanced settings (e.g., temperature). |
-| **4** | **Checkout** | • Summary of selected plan / credits.<br>• Payment method selection. | Uses Stripe for payment processing. |
-| **4.1** | **Stripe Checkout Screen** | • Hosted Stripe page – card entry, 3‑DS, etc.<br>• “Pay” button triggers transaction. | Should be embedded via Stripe Elements or redirect. |
-| **4.2** | **Success Screen** | • Confirmation message with receipt ID.<br>• “Go to Dashboard” CTA. | Displays order summary and next‑steps. |
-| **4.3** | **Post‑Checkout Dashboard (Read‑Only)** | • Dashboard view **without** “Update” / “Edit” buttons (restricted mode).<br>• Only view agents; cannot modify until subscription is active. | Useful for trial users or after a failed payment; clearly indicate limited access. |
+## Overview
+Este documento descreve, passo a passo, os fluxos principais da aplicação **Agent Platform** seguindo os padrões de CQRS + Event Sourcing.
 
 ---
 
-## Visual Flow (Mermaid)
+## 1️⃣ Fluxos de Usuário
 
-```mermaid
-flowchart TD
-    %% Core flow
-    A0[0️⃣ Home] --> A1[1️⃣ Login]
-    A1 --> A2[2️⃣ Dashboard (list agents)]
+### 1. Home
+- **Objetivo**: Exibir landing page estática com chamada à ação.
+- **Ponto de entrada**: `/`
+- **Padrão**: Renderização via Next.js **App Router** (`src/app/(marketing)/page.tsx`).
 
-    %% Agent interaction
-    A2 --> A2_1[2.1️⃣ Agent Detail (Tenant‑specific)]
-    A2_1 -->|Talk with agent| A2_1a[Chat UI]
-    A2_1 -->|Edit| A2_1b[Agent Editor]
+### 2. Login
+- **Objetivo**: Autenticar usuário via provedor Privy.
+- **Rota**: `/login`
+- **Fluxo**:
+  1. Usuário clica em *Login*.
+  2. Redirecionamento para o fluxo OAuth do **Privy**.
+  3. Callback cliente recebe `access_token`.
+  4. POST para `src/app/api/auth/callback/route.ts`.
+- **Padrão**: Publica `UserLoggedIn` e cria sessão JWE segura.
 
-    %% Create new agent
-    A2 --> A3[3️⃣ Create New Agent]
+### 3. Login Success (Tenant Provisioning)
+- **Objetivo**: Garantir que o usuário tenha um *tenant* (`free tier`).
+- **Rota**: `/login/success` (Mapeado em `src/app/login/success/route.ts`)
+- **Passos**:
+  1. Verifica se existe `tenantId` na sessão JWE.
+  2. **Se não existir** → Dispara `CreateTenantCommand`.
+  3. O Handler faz append de `TenantCreated` e `TenantUserAssociated` na **EventStore**.
+  4. Atualiza a sessão JWE com o novo `tenantId`.
+  5. Dispara `CreateAgentCommand` para criar um agente de teste.
+- **Padrão**: Todas as ações geram eventos imutáveis.
 
-    %% Checkout flow
-    A2 --> A4[4️⃣ Checkout]
-    A4 --> A4_1[4.1️⃣ Stripe Checkout Screen]
-    A4_1 --> A4_2[4.2️⃣ Success Screen]
-    A4_2 --> A4_3[4.3️⃣ Post‑Checkout Dashboard (read‑only)]
+### 4. Checkout (Stripe Integration)
+- **Objetivo**: Permitir upgrade de plano.
+- **Rota**: `/checkout`
+- **Passos**:
+  1. Usuário clica *Upgrade* → chamada a `src/app/api/stripe/create-session/route.ts`.
+  2. Publica evento `CheckoutStarted`.
+  3. Webhook `src/app/api/stripe/webhook/route.ts` recebe `checkout.session.completed`.
+  4. Valida idempotência via `externalEventId` na **EventStore**.
+  5. Evento `CheckoutCompleted` é publicado.
+  6. **Projector** atualiza o status do tenant na Read Model (tabela `Tenant`).
 
-    %% Styling
-    classDef primary fill:#2C3E50,color:#ECF0F1,stroke:#3498DB,stroke-width:2px;
-    classDef secondary fill:#34495E,color:#ECF0F1,stroke:#95A5A6,stroke-width:1px;
-    class A0,A1,A2,A3,A4 primary;
-    class A2_1,A2_1a,A2_1b,A4_1,A4_2,A4_3 secondary;
-``` 
+---
 
-### How to Use This Documentation
-- **Design & Development** – Follow each numbered step when building UI components or API endpoints.
-- **Testing** – Verify that each transition (e.g., Login → Dashboard) works within the performance budget (≤ 2 s).
-- **Onboarding & Support** – Use the table above to explain the flow to new users or to troubleshoot where a user might get stuck.
+## 2️⃣ Requisitos Não Funcionais (NFR)
+| NFR | Descrição | Implementação | Conformidade |
+|-----|------------|---------------|--------------|
+| **Auditabilidade** | Estados críticos rastreáveis via eventos. | EventStore centralizada. | ✅ Conforme |
+| **Performance** | Latência < 200 ms para leitura. | Cache na Edge (Redis) + JWE local decryption. | ✅ Conforme |
+| **Idempotência** | Webhooks resilientes a retries. | Unique constraint no `externalEventId`. | ✅ Conforme |
+| **Segurança** | Claims de Tenant protegidas. | Sessão JWE criptografada (A256GCM). | ✅ Conforme |
 
-Feel free to let me know if you need more detail on any specific screen (e.g., component hierarchy, API contracts, or copy / UX guidelines).
+---
+
+## 3️⃣ Referências de Código
+- **Event Bus**: `src/lib/cqrs/EventBus.ts`
+- **Event Store**: `src/lib/cqrs/EventStore.ts`
+- **Módulo Tenants**: `src/modules/tenants/`
+- **Módulo Checkout**: `src/modules/checkout/`
+- **Sessão Segura**: `src/lib/session.ts`
+- **Proxy/Middleware**: `src/proxy.ts`
+
+---
+*Documento atualizado para refletir a arquitetura CQRS + Event Sourcing (Junho 2026).*

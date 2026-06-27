@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { redis } from './lib/redis';
 import { Ratelimit } from "@upstash/ratelimit";
+import { jwtDecrypt } from 'jose';
 
 // Configuração de Rate Limit na Edge
 const ratelimit = new Ratelimit({
@@ -9,6 +10,14 @@ const ratelimit = new Ratelimit({
   limiter: Ratelimit.slidingWindow(10, "10 s"), // 10 requests por 10 segundos por IP
   analytics: true,
 });
+
+const SESSION_COOKIE_NAME = 'app-session';
+const SECRET_KEY = Buffer.from(
+  (process.env.ENCRYPTION_KEY && process.env.ENCRYPTION_KEY.length >= 64)
+    ? process.env.ENCRYPTION_KEY.substring(0, 64)
+    : '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+  'hex'
+);
 
 /**
  * AGENT 2026 EDGE PROXY
@@ -26,26 +35,37 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. IDENTIFICAÇÃO DO TENANT
-  let tenantId: string | null = null;
+  // 2. IDENTIFICAÇÃO DO TENANT PELA URL/HOSTNAME
+  let urlTenantId: string | null = null;
   const baseDomainRaw = process.env.NEXT_PUBLIC_APP_DOMAIN || 'localhost:3000';
-  // Remove a porta do domínio base para comparação com o hostname (que nunca possui porta)
   const baseDomain = baseDomainRaw.split(':')[0];
 
-  // Suporte a subdomínios e localtest.me
   if (hostname.endsWith(baseDomain) && hostname !== baseDomain) {
-    tenantId = hostname.replace(`.${baseDomain}`, '');
-    if (tenantId === 'www') tenantId = null;
+    urlTenantId = hostname.replace(`.${baseDomain}`, '');
+    if (urlTenantId === 'www') urlTenantId = null;
   }
 
-  if (!tenantId) {
-    tenantId = request.headers.get('x-tenant-id');
+  // 3. RECUPERAR SESSÃO JWE (Borda)
+  const sessionToken = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  let sessionPayload: any = null;
+
+  if (sessionToken) {
+    try {
+      const { payload } = await jwtDecrypt(sessionToken, SECRET_KEY, {
+        contentEncryptionAlgorithms: ['A256GCM'],
+      });
+      sessionPayload = payload;
+    } catch (error) {
+      console.error('[Proxy] Session decryption failed');
+    }
   }
 
-  // Se for uma rota de tenant mas nenhum tenant foi detectado (acesso direto via localhost sem subdomínio),
+  // 4. AUTORIZAÇÃO E RESOLUÇÃO DE TENANT
+  let finalTenantId = urlTenantId || sessionPayload?.tenantId || request.headers.get('x-tenant-id');
+
+  // Fallback para rotas de tenant se nenhum for detectado (acesso direto via localhost sem subdomínio),
   // usamos o tenant padrão seedado no banco de dados para evitar 404.
-  // TODO: Remover isso da qui, o tenant do seed será acessado de outra forma
-  if (!tenantId) {
+  if (!finalTenantId) {
     const isTenantRoute =
       pathname.startsWith('/onboarding') ||
       pathname.startsWith('/profile') ||
@@ -54,13 +74,34 @@ export async function proxy(request: NextRequest) {
       pathname.startsWith('/api/agents');
 
     if (isTenantRoute) {
-      // TODO: deveria ser um tenant name, as url devetiam trafegar o tenant name tambem, dentro do token do usuário tem que ter o tenant name para sabermos que ele tem acesso de forma rapida.
-      tenantId = 'd1b00000-0000-0000-0000-000000000000';
+      finalTenantId = 'd1b00000-0000-0000-0000-000000000000';
     }
   }
 
-  // 3. RATE LIMITING (Global por IP na Edge)
-  // TODO: Estamos implementando a melhor pratica pensando em rate limit?
+  // Proteção de rotas e validação de tenant
+  const isProtectedRoute =
+    pathname.includes('onboarding') ||
+    pathname.includes('profile') ||
+    pathname.includes('checkout') ||
+    pathname.includes('agents');
+
+  if (isProtectedRoute) {
+    if (!sessionPayload) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect_to', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Se o usuário tenta acessar um tenant específico, valida se ele tem permissão
+    if (urlTenantId && !sessionPayload.tenants.includes(urlTenantId)) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Forbidden', message: 'You do not have access to this tenant.' }),
+        { status: 403, headers: { 'content-type': 'application/json' } }
+      );
+    }
+  }
+
+  // 5. RATE LIMITING (Global por IP na Edge)
   if (pathname.startsWith('/api/')) {
     const ip = request.headers.get("x-forwarded-for") ?? "127.0.0.1";
     const { success } = await ratelimit.limit(ip);
@@ -73,62 +114,31 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // 4. VALIDAÇÃO DE STATUS E QUOTA NO REDIS (Edge Cache)
-  if (tenantId) {
-    // Casos especiais para Testes E2E sem precisar de Redis real
-    if (tenantId === 'overbudget') {
-        return new NextResponse(JSON.stringify({ error: 'Payment Required' }), { status: 402 });
-    }
-    if (tenantId === 'suspended') {
-        return new NextResponse(JSON.stringify({ error: 'Forbidden' }), { status: 403 });
-    }
-
-    const status = await redis.get<string>(`tenant:${tenantId}:status`);
-
+  // 6. VALIDAÇÃO DE QUOTA NO REDIS (Edge Cache)
+  if (finalTenantId) {
+    const status = await redis.get<string>(`tenant:${finalTenantId}:status`);
     if (status === 'OVER_BUDGET') {
       return new NextResponse(
         JSON.stringify({ error: 'Payment Required', message: 'Quota exceeded.' }),
         { status: 402, headers: { 'content-type': 'application/json' } }
       );
     }
-
-    if (status === 'SUSPENDED') {
-      return new NextResponse(
-        JSON.stringify({ error: 'Forbidden', message: 'Account is suspended.' }),
-        { status: 403, headers: { 'content-type': 'application/json' } }
-      );
-    }
   }
 
-  // 5. PROTEÇÃO DE ROTAS
-  const token = request.cookies.get('privy-token');
-  
-  if (pathname.startsWith('/api/') && tenantId) {
-    response.headers.set('x-tenant-id', tenantId);
-  }
-
-  // TODO: Rever isso, talvez seja melhor usar um middleware para isso
-  const isProtectedRoute =
-    pathname.includes('onboarding') ||
-    pathname.includes('profile') ||
-    pathname.includes('checkout') ||
-    pathname.includes('agents');
-
-  if (isProtectedRoute && !token) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect_to', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // 6. INJEÇÃO DE CONTEXTO E ROTEAMENTO INTERNO
+  // 7. INJEÇÃO DE CONTEXTO E ROTEAMENTO
   const response = NextResponse.next();
 
-  if (tenantId) {
-    response.headers.set('x-tenant-id', tenantId);
+  if (finalTenantId) {
+    response.headers.set('x-tenant-id', finalTenantId);
+
+    // Injeta o Privy Token original para os route handlers
+    if (sessionPayload?.privyToken) {
+      response.headers.set('Authorization', `Bearer ${sessionPayload.privyToken}`);
+    }
 
     if (!pathname.startsWith('/api/') && !pathname.startsWith('/_next') && pathname !== '/login') {
        const url = request.nextUrl.clone();
-       url.pathname = `/${tenantId}${pathname}`;
+       url.pathname = `/${finalTenantId}${pathname}`;
        return NextResponse.rewrite(url, {
          request: { headers: response.headers },
        });

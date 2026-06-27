@@ -1,3 +1,4 @@
+import { getSession } from '@/lib/session';
 import { tokenVerifier } from '../di';
 import { prisma, getPrismaWithRLS } from '@/lib/prisma';
 
@@ -8,7 +9,8 @@ import { prisma, getPrismaWithRLS } from '@/lib/prisma';
  * Ela extrai o tenantId e userId, garantindo o isolamento via Neon RLS.
  */
 export async function requireAuth(request: Request) {
-  const authHeader = request.headers.get('authorization');
+  const session = await getSession();
+  const authHeader = session?.privyToken ? `Bearer ${session.privyToken}` : request.headers.get("authorization");
   const tenantId = request.headers.get('x-tenant-id');
 
   if (!authHeader?.startsWith('Bearer ')) {

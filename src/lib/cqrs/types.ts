@@ -1,4 +1,5 @@
 export interface IEvent {
+  externalEventId?: string;
   tenantId: string;
   aggregateType: string;
   aggregateId: string;
