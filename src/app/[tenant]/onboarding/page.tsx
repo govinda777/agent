@@ -116,6 +116,7 @@ export default function OnboardingPage() {
               <button
                 key={agent.id}
                 onClick={() => setSelectedAgent(agent)}
+                data-testid={`agent-chat-button-${agent.id}`}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
                   selectedAgent?.id === agent.id
                     ? 'bg-blue-50 border-blue-100 border shadow-sm'
