@@ -14,7 +14,10 @@ model EventStore {
   aggregateId   String
   eventType     String   // AgentCreated, AgentExecutionStarted, etc.
   payload       Json
+  externalEventId String?
   createdAt     DateTime @default(now())
+
+  @@unique([tenantId, externalEventId])
 
   @@index([tenantId])
   @@index([aggregateId])

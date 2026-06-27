@@ -4,11 +4,15 @@ import { eventBus } from '@/lib/cqrs/EventBus';
 import { initAgentProjections } from '@/modules/agents/projections/AgentProjectionHandler';
 import { initExecutionProjections } from '@/modules/agents/projections/ExecutionProjectionHandler';
 import { initQuotaEvents } from '@/modules/agents/projections/QuotaEventHandler';
+import { initTenantProjections } from '@/modules/tenants/projections/TenantProjectionHandler';
+import { initCheckoutProjections } from '@/modules/checkout/projections/CheckoutProjectionHandler';
 
 // Inicializa os handlers de projeção
 initAgentProjections();
 initExecutionProjections();
 initQuotaEvents();
+initTenantProjections();
+initCheckoutProjections();
 
 /**
  * WEBHOOK DE PROJEÇÕES (ASYNC WORKER)

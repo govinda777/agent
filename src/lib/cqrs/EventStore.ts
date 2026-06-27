@@ -15,6 +15,7 @@ export class EventStore {
         aggregateId: event.aggregateId,
         eventType: event.eventType,
         payload: event.payload as JsonValue,
+        externalEventId: event.externalEventId,
       }
     });
 
