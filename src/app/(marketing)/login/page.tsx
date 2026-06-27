@@ -16,7 +16,7 @@ export default function Login() {
     if (ready && authenticated) {
       const redirectParam = searchParams.get('redirect_to') ?? '/onboarding';
       // If the redirect does not already contain a tenant segment, prepend the default tenant ID.
-      const defaultTenant = 'd1b00000-0000-0000-0000-000000000000';
+      const defaultTenant  = 'd1b00000-0000-0000-0000-000000000000';
       const hasTenant = /^\/[a-f0-9-]+/.test(redirectParam);
       const finalRedirect = hasTenant ? redirectParam : `/${defaultTenant}${redirectParam.startsWith('/') ? '' : '/'}${redirectParam}`;
       router.push(finalRedirect);
