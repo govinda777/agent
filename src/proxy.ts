@@ -44,6 +44,7 @@ export async function proxy(request: NextRequest) {
 
   // Se for uma rota de tenant mas nenhum tenant foi detectado (acesso direto via localhost sem subdomínio),
   // usamos o tenant padrão seedado no banco de dados para evitar 404.
+  // TODO: Remover isso da qui, o tenant do seed será acessado de outra forma
   if (!tenantId) {
     const isTenantRoute =
       pathname.startsWith('/onboarding') ||
@@ -53,11 +54,13 @@ export async function proxy(request: NextRequest) {
       pathname.startsWith('/api/agents');
 
     if (isTenantRoute) {
+      // TODO: deveria ser um tenant name, as url devetiam trafegar o tenant name tambem, dentro do token do usuário tem que ter o tenant name para sabermos que ele tem acesso de forma rapida.
       tenantId = 'd1b00000-0000-0000-0000-000000000000';
     }
   }
 
   // 3. RATE LIMITING (Global por IP na Edge)
+  // TODO: Estamos implementando a melhor pratica pensando em rate limit?
   if (pathname.startsWith('/api/')) {
     const ip = request.headers.get("x-forwarded-for") ?? "127.0.0.1";
     const { success } = await ratelimit.limit(ip);
@@ -103,6 +106,8 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith('/api/') && tenantId) {
     response.headers.set('x-tenant-id', tenantId);
   }
+
+  // TODO: Rever isso, talvez seja melhor usar um middleware para isso
   const isProtectedRoute =
     pathname.includes('onboarding') ||
     pathname.includes('profile') ||
