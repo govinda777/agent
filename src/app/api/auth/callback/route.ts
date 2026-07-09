@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { tokenVerifier } from '@/modules/auth/di';
-import { prisma } from '@/lib/prisma';
+import { userRepository } from '@/modules/users/di';
 import { EventStore } from '@/lib/cqrs/EventStore';
 import { createSession } from '@/lib/session';
 import { createTenantHandler } from '@/modules/tenants/di';
@@ -19,17 +19,11 @@ export async function POST(request: Request) {
     // 1. Validar o token Privy
     const privyId = await tokenVerifier.verifyToken(accessToken);
 
-    // 2. Garantir que o usuário existe na DB global
-    let user = await prisma.user.findUnique({
-      where: { privyId },
-      include: { tenants: true }
-    });
+    // 2. Garantir que o usuário existe na DB global via Repository
+    let user = await userRepository.findByPrivyId(privyId);
 
     if (!user) {
-      user = await prisma.user.create({
-        data: { privyId },
-        include: { tenants: true }
-      });
+      user = await userRepository.create(privyId);
     }
 
     // 3. Provisionar Tenant se o usuário não tiver nenhum

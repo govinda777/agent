@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { createAgentCommandHandler } from '@/modules/agents/commands/CreateAgentCommand';
-import { getPrismaWithRLS } from '@/lib/prisma';
+import { agentRepository } from '@/modules/agents/di';
 
 /**
  * AGENTS API: PURE COMMAND FLOW
- *
- * Sem inicializações de projeção (movidas para o Webhook Worker).
  */
 export async function POST(request: Request) {
   try {
@@ -42,8 +40,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const db = getPrismaWithRLS(tenantId);
-    const agents = await db.agent.findMany();
+    // Architecture Fix: Use Repository instead of direct Prisma/RLS logic here
+    const agents = await agentRepository.findAll(tenantId);
 
     return NextResponse.json(agents);
   } catch (error: unknown) {

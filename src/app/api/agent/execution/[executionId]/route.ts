@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { getPrismaWithRLS } from '@/lib/prisma';
+import { executionRepository } from '@/modules/agents/di';
 
 /**
  * QUERY ROUTE: OBTEM STATUS DA EXECUÇÃO
- *
- * Exemplo de leitura do Read Model (Projeção) otimizado.
  */
 export async function GET(
   _request: Request,
@@ -20,12 +18,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const db = getPrismaWithRLS(tenantId);
-
-    // Lê da projeção (rápido, sem replay de eventos)
-    const projection = await db.executionProjection.findUnique({
-      where: { id: executionId }
-    });
+    // Architecture Fix: Use Repository instead of direct Prisma/RLS logic here
+    const projection = await executionRepository.findById(executionId, tenantId);
 
     if (!projection) {
       return NextResponse.json({ error: 'Execution not found' }, { status: 404 });

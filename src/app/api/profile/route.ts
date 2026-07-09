@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/modules/auth/server';
-import { prisma } from '@/lib/prisma';
+import { userRepository } from '@/modules/users/di';
 import { CryptoService } from '@/lib/crypto';
 
 export async function POST(request: Request) {
@@ -16,12 +16,10 @@ export async function POST(request: Request) {
       encryptedKey = CryptoService.encryptWithPrivy(llmApiKey, privyId);
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        llmProvider: llmProvider || null,
-        llmApiKey: encryptedKey,
-      },
+    // Architecture Fix: Use Repository instead of direct Prisma
+    const updatedUser = await userRepository.updateProfile(userId, {
+      llmProvider: llmProvider || null,
+      llmApiKey: encryptedKey,
     });
 
     return NextResponse.json(
@@ -41,14 +39,8 @@ export async function GET(request: Request) {
   try {
     const { userId } = await requireAuth(request);
     
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        llmProvider: true,
-        // Do NOT select llmApiKey to send to frontend
-        llmApiKey: true,
-      }
-    });
+    // Architecture Fix: Use Repository
+    const user = await userRepository.findById(userId);
 
     return NextResponse.json({
       llmProvider: user?.llmProvider || null,

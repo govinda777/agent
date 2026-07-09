@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import { getPrismaWithRLS } from '@/lib/prisma';
+import { agentRepository } from '@/modules/agents/di';
 import { Bot, Plus, ExternalLink, Globe, MessageSquare, Instagram, Clock } from 'lucide-react';
 import Link from 'next/link';
 
@@ -11,13 +11,11 @@ export default async function TenantAgentsPage() {
     return <div>Unauthorized</div>;
   }
 
-  const db = getPrismaWithRLS(tenantId);
-  const agents = await db.agent.findMany({
-    orderBy: { createdAt: 'desc' }
-  });
+  // Use the established Repository architecture
+  const agents = await agentRepository.findAll(tenantId);
 
   return (
-    <div className="p-8 h-full overflow-y-auto bg-gray-50/50">
+    <div className="p-8 h-full overflow-y-auto bg-gray-50/50 text-slate-900">
       <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Seus Agentes</h1>
@@ -42,9 +40,9 @@ export default async function TenantAgentsPage() {
                   <Bot className="w-6 h-6" />
                 </div>
                 <div className="flex gap-1.5">
-                   {agent.channelWeb && <Globe className="w-4 h-4 text-gray-400" title="Web" />}
-                   {agent.channelWhatsapp && <MessageSquare className="w-4 h-4 text-gray-400" title="WhatsApp" />}
-                   {agent.channelInstagram && <Instagram className="w-4 h-4 text-gray-400" title="Instagram" />}
+                   {agent.channels.web && <Globe className="w-4 h-4 text-gray-400" title="Web" />}
+                   {agent.channels.whatsapp && <MessageSquare className="w-4 h-4 text-gray-400" title="WhatsApp" />}
+                   {agent.channels.instagram && <Instagram className="w-4 h-4 text-gray-400" title="Instagram" />}
                 </div>
               </div>
 

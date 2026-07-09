@@ -1,6 +1,6 @@
 import { headers } from 'next/headers';
 import Link from 'next/link';
-import { getPrismaWithRLS } from '@/lib/prisma';
+import { tenantRepository } from '@/modules/tenants/di';
 import { Sparkles, ArrowRight } from 'lucide-react';
 
 export default async function TenantLayout({
@@ -19,12 +19,8 @@ export default async function TenantLayout({
     console.error(`Tenant mismatch: URL (${tenantId}) vs Header (${tenantFromHeader})`);
   }
 
-  // Fetch tenant status to show/hide upgrade banner
-  const db = getPrismaWithRLS(tenantId);
-  const tenant = await db.tenant.findUnique({
-    where: { id: tenantId },
-    select: { status: true }
-  });
+  // Fetch tenant status to show/hide upgrade banner via Repository
+  const tenant = await tenantRepository.findById(tenantId);
 
   const isTrial = tenant?.status === 'FREE';
 
