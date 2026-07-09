@@ -3,6 +3,10 @@ import { tokenVerifier } from '@/modules/auth/di';
 import { prisma } from '@/lib/prisma';
 import { EventStore } from '@/lib/cqrs/EventStore';
 import { createSession } from '@/lib/session';
+import { createTenantHandler } from '@/modules/tenants/di';
+import { CreateTenantCommand } from '@/modules/tenants/commands/CreateTenantCommand';
+import { createAgentCommandHandler } from '@/modules/agents/commands/CreateAgentCommand';
+import crypto from 'crypto';
 
 export async function POST(request: Request) {
   try {
@@ -28,9 +32,38 @@ export async function POST(request: Request) {
       });
     }
 
-    // 3. Registrar Evento de Login
+    // 3. Provisionar Tenant se o usuário não tiver nenhum
+    let tenantId = user.tenants[0]?.tenantId || '';
+    let tenantsList = user.tenants.map(t => t.tenantId);
+
+    if (!tenantId) {
+      tenantId = crypto.randomUUID();
+      tenantsList = [tenantId];
+
+      // Executa o comando de criação do Tenant
+      await createTenantHandler.execute(new CreateTenantCommand(
+        tenantId,
+        user.id,
+        privyId
+      ));
+
+      // Criação do Agente de Teste (Trial Agent)
+      await createAgentCommandHandler.execute({
+        tenantId,
+        name: 'Agente Trial',
+        n8nWebhookUrl: 'https://n8n.example.com/webhook-trial',
+        n8nAuthToken: 'trial-token',
+        channels: {
+          web: true,
+          whatsapp: false,
+          instagram: false
+        }
+      });
+    }
+
+    // 4. Registrar Evento de Login
     await EventStore.append({
-      tenantId: user.tenants[0]?.tenantId || 'GLOBAL',
+      tenantId: tenantId || 'GLOBAL',
       aggregateType: 'USER',
       aggregateId: user.id,
       eventType: 'UserLoggedIn',
@@ -41,15 +74,13 @@ export async function POST(request: Request) {
       }
     });
 
-    // 4. Criar Sessão JWE
-    // Se o usuário já tem um tenant, usamos o primeiro. Se não, ficará vazio até o provisioning.
-    const tenantId = user.tenants[0]?.tenantId || '';
+    // 5. Criar Sessão JWE
     await createSession({
       privyToken: accessToken,
       tenantId,
       userId: user.id,
       privyId,
-      tenants: user.tenants.map(t => t.tenantId)
+      tenants: tenantsList
     });
 
     return NextResponse.json({ success: true, userId: user.id, tenantId });

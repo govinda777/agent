@@ -11,10 +11,9 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     
-    if (!body.productName || !body.amountInCents) {
-      return NextResponse.json({ error: 'Missing productName or amountInCents' }, { status: 400 });
-    }
-    const { productName, amountInCents } = body;
+    // Centralized price logic in Backend
+    const productName = "Plano Profissional Agent 2026";
+    const amountInCents = 9700; // R$ 97,00
     
     const host = request.headers.get('host');
     const protocol = env.nodeEnv === 'development' ? 'http' : 'https';
@@ -24,8 +23,8 @@ export async function POST(request: Request) {
       productName,
       amountInCents,
       tenantId,
-      successUrl: `${baseUrl}/onboarding?success=true`,
-      cancelUrl: `${baseUrl}/checkout?canceled=true`,
+      successUrl: `${baseUrl}/${tenantId}/checkout/success`,
+      cancelUrl: `${baseUrl}/${tenantId}/checkout?canceled=true`,
       customerEmail: body.email,
     });
 
