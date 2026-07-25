@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { executionRepository } from '@/modules/agents/di';
+import { getExecutionQuery } from '@/modules/agents/queries/GetExecutionQuery';
 
 /**
  * QUERY ROUTE: OBTEM STATUS DA EXECUÇÃO
@@ -18,8 +18,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Architecture Fix: Use Repository instead of direct Prisma/RLS logic here
-    const projection = await executionRepository.findById(executionId, tenantId);
+    // Architecture Fix: Use Query layer
+    const projection = await getExecutionQuery.execute(executionId, tenantId);
 
     if (!projection) {
       return NextResponse.json({ error: 'Execution not found' }, { status: 404 });

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { agentRepository } from '@/modules/agents/di';
+import { getAgentByIdQuery } from '@/modules/agents/queries/GetAgentByIdQuery';
 import { updateAgentCommandHandler } from '@/modules/agents/commands/UpdateAgentCommand';
 import { requireAuth } from '@/modules/auth/server';
 
@@ -11,7 +11,8 @@ export async function GET(
     const { agentId } = await params;
     const { tenantId } = await requireAuth(request);
 
-    const agent = await agentRepository.findById(agentId, tenantId);
+    // Architecture Fix: Use Query layer
+    const agent = await getAgentByIdQuery.execute(agentId, tenantId);
 
     if (!agent) {
       return NextResponse.json({ error: 'Agente não encontrado' }, { status: 404 });

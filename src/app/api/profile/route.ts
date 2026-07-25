@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/modules/auth/server';
-import { userRepository } from '@/modules/users/di';
+import { getUserProfileQuery } from '@/modules/users/queries/GetUserProfileQuery';
+import { updateProfileHandler } from '@/modules/users/di';
 import { CryptoService } from '@/lib/crypto';
 
 export async function POST(request: Request) {
   try {
-    const { userId, privyId } = await requireAuth(request);
+    const { userId, privyId, tenantId } = await requireAuth(request);
     const body = await request.json();
 
     const { llmProvider, llmApiKey } = body;
@@ -16,15 +17,17 @@ export async function POST(request: Request) {
       encryptedKey = CryptoService.encryptWithPrivy(llmApiKey, privyId);
     }
 
-    // Architecture Fix: Use Repository instead of direct Prisma
-    const updatedUser = await userRepository.updateProfile(userId, {
+    // Architecture Fix: Use Command Handler for CQRS compliance
+    await updateProfileHandler.execute({
+      tenantId,
+      userId,
       llmProvider: llmProvider || null,
       llmApiKey: encryptedKey,
     });
 
     return NextResponse.json(
-      { message: 'Profile updated successfully', provider: updatedUser.llmProvider },
-      { status: 200 }
+      { message: 'Solicitação de atualização de perfil processada' },
+      { status: 202 }
     );
   } catch (error: any) {
     console.error('Error updating profile:', error);
@@ -39,8 +42,8 @@ export async function GET(request: Request) {
   try {
     const { userId } = await requireAuth(request);
     
-    // Architecture Fix: Use Repository
-    const user = await userRepository.findById(userId);
+    // Architecture Fix: Use Query layer for CQRS compliance
+    const user = await getUserProfileQuery.execute(userId);
 
     return NextResponse.json({
       llmProvider: user?.llmProvider || null,

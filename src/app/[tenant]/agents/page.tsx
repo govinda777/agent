@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import { agentRepository } from '@/modules/agents/di';
+import { getAgentsQuery } from '@/modules/agents/queries/GetAgentsQuery';
 import { Bot, Plus, ExternalLink, Globe, MessageSquare, Instagram, Clock } from 'lucide-react';
 import Link from 'next/link';
 
@@ -11,8 +11,8 @@ export default async function TenantAgentsPage() {
     return <div>Unauthorized</div>;
   }
 
-  // Use the established Repository architecture
-  const agents = await agentRepository.findAll(tenantId);
+  // Use Query layer for CQRS compliance
+  const agents = await getAgentsQuery.execute(tenantId);
 
   return (
     <div className="p-8 h-full overflow-y-auto bg-gray-50/50 text-slate-900">

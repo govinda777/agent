@@ -9,4 +9,40 @@ export class PrismaTenantRepository implements ITenantRepository {
       where: { id }
     });
   }
+
+  async upsert(tenantId: string, data: { trialEndsAt: Date, status?: string }) {
+    const db = getPrismaWithRLS(tenantId);
+    return db.tenant.upsert({
+      where: { id: tenantId },
+      create: {
+        id: tenantId,
+        trialEndsAt: data.trialEndsAt,
+        status: data.status || 'FREE'
+      },
+      update: {
+        trialEndsAt: data.trialEndsAt,
+        status: data.status
+      }
+    });
+  }
+
+  async associateUser(tenantId: string, userId: string, role: string) {
+    const db = getPrismaWithRLS(tenantId);
+    await db.tenantUser.upsert({
+      where: {
+        userId_tenantId: {
+          userId,
+          tenantId
+        }
+      },
+      create: {
+        userId,
+        tenantId,
+        role
+      },
+      update: {
+        role
+      }
+    });
+  }
 }

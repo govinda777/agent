@@ -1,6 +1,6 @@
 import { headers } from 'next/headers';
 import Link from 'next/link';
-import { tenantRepository } from '@/modules/tenants/di';
+import { getTenantQuery } from '@/modules/tenants/queries/GetTenantQuery';
 import { Sparkles, ArrowRight } from 'lucide-react';
 
 export default async function TenantLayout({
@@ -19,8 +19,8 @@ export default async function TenantLayout({
     console.error(`Tenant mismatch: URL (${tenantId}) vs Header (${tenantFromHeader})`);
   }
 
-  // Fetch tenant status to show/hide upgrade banner via Repository
-  const tenant = await tenantRepository.findById(tenantId);
+  // Use Query layer
+  const tenant = await getTenantQuery.execute(tenantId);
 
   const isTrial = tenant?.status === 'FREE';
 

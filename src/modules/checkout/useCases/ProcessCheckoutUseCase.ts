@@ -1,5 +1,4 @@
 import Stripe from 'stripe';
-import { env } from '@/config/env';
 
 export interface CheckoutDTO {
   productName: string;
@@ -11,13 +10,7 @@ export interface CheckoutDTO {
 }
 
 export class ProcessCheckoutUseCase {
-  private stripe: Stripe;
-
-  constructor() {
-    this.stripe = new Stripe(env.stripeSecretKey, {
-      apiVersion: '2023-10-16' as any,
-    });
-  }
+  constructor(private readonly stripe: Stripe) {}
 
   async execute(data: CheckoutDTO): Promise<{ url: string | null }> {
     try {

@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/modules/auth/server';
-import { tenantRepository } from '@/modules/tenants/di';
+import { getTenantQuery } from '@/modules/tenants/queries/GetTenantQuery';
 
 export async function GET(request: Request) {
   try {
     const { tenantId } = await requireAuth(request);
 
-    const tenant = await tenantRepository.findById(tenantId);
+    // Architecture Fix: Use Query layer
+    const tenant = await getTenantQuery.execute(tenantId);
 
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });

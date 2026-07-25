@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { tokenVerifier } from '@/modules/auth/di';
-import { userRepository } from '@/modules/users/di';
+import { userRepository, createUserHandler } from '@/modules/users/di';
+import { CreateUserCommand } from '@/modules/users/commands/CreateUserCommand';
 import { EventStore } from '@/lib/cqrs/EventStore';
 import { createSession } from '@/lib/session';
 import { createTenantHandler } from '@/modules/tenants/di';
@@ -19,16 +20,21 @@ export async function POST(request: Request) {
     // 1. Validar o token Privy
     const privyId = await tokenVerifier.verifyToken(accessToken);
 
-    // 2. Garantir que o usuário existe na DB global via Repository
+    // 2. Garantir que o usuário existe na DB global (Query for Read, Command for Write)
     let user = await userRepository.findByPrivyId(privyId);
+    let userId = user?.id || crypto.randomUUID();
 
     if (!user) {
-      user = await userRepository.create(privyId);
+      await createUserHandler.execute(new CreateUserCommand(
+        'GLOBAL',
+        userId,
+        privyId
+      ));
     }
 
     // 3. Provisionar Tenant se o usuário não tiver nenhum
-    let tenantId = user.tenants[0]?.tenantId || '';
-    let tenantsList = user.tenants.map(t => t.tenantId);
+    let tenantId = user?.tenants[0]?.tenantId || '';
+    let tenantsList = user?.tenants.map(t => t.tenantId) || [];
 
     if (!tenantId) {
       tenantId = crypto.randomUUID();
@@ -37,7 +43,7 @@ export async function POST(request: Request) {
       // Executa o comando de criação do Tenant
       await createTenantHandler.execute(new CreateTenantCommand(
         tenantId,
-        user.id,
+        userId,
         privyId
       ));
 
@@ -55,14 +61,14 @@ export async function POST(request: Request) {
       });
     }
 
-    // 4. Registrar Evento de Login
+    // 4. Registrar Evento de Login (CQRS/ES)
     await EventStore.append({
       tenantId: tenantId || 'GLOBAL',
       aggregateType: 'USER',
-      aggregateId: user.id,
+      aggregateId: userId,
       eventType: 'UserLoggedIn',
       payload: {
-        userId: user.id,
+        userId: userId,
         privyId: privyId,
         timestamp: new Date().toISOString()
       }
@@ -72,12 +78,12 @@ export async function POST(request: Request) {
     await createSession({
       privyToken: accessToken,
       tenantId,
-      userId: user.id,
+      userId: userId,
       privyId,
       tenants: tenantsList
     });
 
-    return NextResponse.json({ success: true, userId: user.id, tenantId });
+    return NextResponse.json({ success: true, userId: userId, tenantId });
   } catch (error: any) {
     console.error('Auth callback error:', error);
     return NextResponse.json({ error: error.message || 'Authentication failed' }, { status: 401 });

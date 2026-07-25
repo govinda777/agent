@@ -16,10 +16,11 @@ export class PrismaUserRepository implements IUserRepository {
     });
   }
 
-  async create(privyId: string) {
-    return prisma.user.create({
-      data: { privyId },
-      include: { tenants: true }
+  async upsert(userId: string, privyId: string) {
+    return prisma.user.upsert({
+      where: { id: userId },
+      create: { id: userId, privyId },
+      update: {}
     });
   }
 

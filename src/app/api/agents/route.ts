@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { createAgentCommandHandler } from '@/modules/agents/commands/CreateAgentCommand';
-import { agentRepository } from '@/modules/agents/di';
+import { getAgentsQuery } from '@/modules/agents/queries/GetAgentsQuery';
 
 /**
  * AGENTS API: PURE COMMAND FLOW
@@ -40,8 +40,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Architecture Fix: Use Repository instead of direct Prisma/RLS logic here
-    const agents = await agentRepository.findAll(tenantId);
+    // Architecture Fix: Use Query layer for CQRS compliance
+    const agents = await getAgentsQuery.execute(tenantId);
 
     return NextResponse.json(agents);
   } catch (error: unknown) {

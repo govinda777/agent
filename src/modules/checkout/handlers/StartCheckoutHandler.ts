@@ -5,7 +5,7 @@ import { EventStore } from '@/lib/cqrs/EventStore';
 import { CHECKOUT_STARTED } from '../events/CheckoutEvents';
 
 export class StartCheckoutHandler implements ICommandHandler<StartCheckoutCommand> {
-  private processCheckoutUseCase = new ProcessCheckoutUseCase();
+  constructor(private readonly processCheckoutUseCase: ProcessCheckoutUseCase) {}
 
   async execute(command: StartCheckoutCommand): Promise<string> {
     const productName = "Plano Profissional Agent 2026";
@@ -25,7 +25,7 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
     await EventStore.append({
       tenantId: command.tenantId,
       aggregateType: 'CHECKOUT',
-      aggregateId: command.tenantId, // Using tenantId as aggregateId for checkout flow context
+      aggregateId: command.tenantId,
       eventType: CHECKOUT_STARTED,
       payload: {
         tenantId: command.tenantId,
