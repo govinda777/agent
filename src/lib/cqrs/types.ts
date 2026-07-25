@@ -15,3 +15,7 @@ export interface ICommand {
 export interface ICommandHandler<T extends ICommand> {
   execute(command: T): Promise<string | void>;
 }
+
+export interface IQuery<TResult> {
+  execute(...args: any[]): Promise<TResult>;
+}

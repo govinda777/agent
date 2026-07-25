@@ -63,21 +63,6 @@ export async function proxy(request: NextRequest) {
   // 4. AUTORIZAÇÃO E RESOLUÇÃO DE TENANT
   let finalTenantId = urlTenantId || sessionPayload?.tenantId || request.headers.get('x-tenant-id');
 
-  // Fallback para rotas de tenant se nenhum for detectado (acesso direto via localhost sem subdomínio),
-  // usamos o tenant padrão seedado no banco de dados para evitar 404.
-  if (!finalTenantId) {
-    const isTenantRoute =
-      pathname.startsWith('/onboarding') ||
-      pathname.startsWith('/profile') ||
-      pathname.startsWith('/checkout') ||
-      pathname.startsWith('/agents') ||
-      pathname.startsWith('/api/agents');
-
-    if (isTenantRoute) {
-      finalTenantId = 'd1b00000-0000-0000-0000-000000000000';
-    }
-  }
-
   // Proteção de rotas e validação de tenant
   const isProtectedRoute =
     pathname.includes('onboarding') ||

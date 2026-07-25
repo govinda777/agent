@@ -1,5 +1,4 @@
 import Stripe from 'stripe';
-import { env } from '@/config/env';
 
 export interface CheckoutDTO {
   productName: string;
@@ -11,14 +10,7 @@ export interface CheckoutDTO {
 }
 
 export class ProcessCheckoutUseCase {
-  private stripe: Stripe;
-
-  constructor() {
-    // For MVP we assume the environment variable exists
-    this.stripe = new Stripe(env.stripeSecretKey, {
-      apiVersion: '2026-05-27.dahlia', // Updated to a modern supported API version
-    });
-  }
+  constructor(private readonly stripe: Stripe) {}
 
   async execute(data: CheckoutDTO): Promise<{ url: string | null }> {
     try {
@@ -44,6 +36,9 @@ export class ProcessCheckoutUseCase {
         cancel_url: data.cancelUrl,
         customer_email: data.customerEmail,
         client_reference_id: data.tenantId,
+        metadata: {
+          tenantId: data.tenantId,
+        }
       });
 
       return { url: session.url };

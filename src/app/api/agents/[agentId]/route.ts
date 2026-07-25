@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { agentRepository, updateAgentUseCase } from '@/modules/agents/di';
+import { getAgentByIdQuery } from '@/modules/agents/queries/GetAgentByIdQuery';
+import { updateAgentCommandHandler } from '@/modules/agents/commands/UpdateAgentCommand';
 import { requireAuth } from '@/modules/auth/server';
 
 export async function GET(
@@ -10,9 +11,8 @@ export async function GET(
     const { agentId } = await params;
     const { tenantId } = await requireAuth(request);
 
-    // O RLS via requireAuth (db) garante o isolamento.
-    // O agentRepository agora também utiliza RLS internamente.
-    const agent = await agentRepository.findById(agentId, tenantId);
+    // Architecture Fix: Use Query layer
+    const agent = await getAgentByIdQuery.execute(agentId, tenantId);
 
     if (!agent) {
       return NextResponse.json({ error: 'Agente não encontrado' }, { status: 404 });
@@ -36,23 +36,21 @@ export async function PUT(
     const { tenantId } = await requireAuth(request);
     const body = await request.json();
 
-    const updatedAgent = await updateAgentUseCase.execute({
+    // Use Command-based architecture
+    await updateAgentCommandHandler.execute({
       id: agentId,
       tenantId,
       ...body
     });
 
     return NextResponse.json(
-      { message: 'Agente atualizado com sucesso', agent: updatedAgent },
-      { status: 200 }
+      { message: 'Solicitação de atualização processada com sucesso' },
+      { status: 202 }
     );
   } catch (error: any) {
-    let status = 500;
-    if (error.message.includes('cannot be empty')) status = 400;
-
     return NextResponse.json(
       { error: error.message || 'Internal Server Error' },
-      { status }
+      { status: 500 }
     );
   }
 }
