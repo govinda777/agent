@@ -47,15 +47,18 @@ export class PrismaAgentRepository implements IAgentRepository {
         whatsapp: dbAgent.channelWhatsapp,
         instagram: dbAgent.channelInstagram,
       },
-      createdAt: dbAgent.createdAt.toISOString(),
+      createdAt: dbAgent.createdAt ? (typeof dbAgent.createdAt.toISOString === 'function' ? dbAgent.createdAt.toISOString() : new Date(dbAgent.createdAt).toISOString()) : new Date().toISOString(),
     };
   }
 
-  async save(tenantId: string, agentData: Omit<Agent, 'id' | 'createdAt'>): Promise<Agent> {
+  async save(tenantId: string, agentData: Omit<Agent, 'id' | 'createdAt'> & { id?: string }): Promise<Agent> {
     const db = getPrismaWithRLS(tenantId);
     
-    const created = await db.agent.create({
-      data: {
+    // We use upsert to handle both creation and update from projections
+    const created = await db.agent.upsert({
+      where: { id: agentData.id || '' },
+      create: {
+        id: agentData.id,
         name: agentData.name,
         n8nWebhookUrl: agentData.n8nWebhookUrl,
         n8nAuthToken: encrypt(agentData.n8nAuthToken),
@@ -63,6 +66,14 @@ export class PrismaAgentRepository implements IAgentRepository {
         channelWhatsapp: agentData.channels.whatsapp,
         channelInstagram: agentData.channels.instagram,
         tenantId,
+      },
+      update: {
+        name: agentData.name,
+        n8nWebhookUrl: agentData.n8nWebhookUrl,
+        n8nAuthToken: encrypt(agentData.n8nAuthToken),
+        channelWeb: agentData.channels.web,
+        channelWhatsapp: agentData.channels.whatsapp,
+        channelInstagram: agentData.channels.instagram,
       }
     });
     return this.mapToDomain(created);

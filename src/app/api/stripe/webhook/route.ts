@@ -25,16 +25,18 @@ export async function POST(request: Request) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
-    const { tenantId, userId, plan } = session.metadata || {};
 
-    if (!tenantId || !userId) {
-      console.error('Missing metadata in Stripe session');
-      return NextResponse.json({ error: 'Missing metadata' }, { status: 400 });
+    // Use client_reference_id as fallback for tenantId
+    const tenantId = session.metadata?.tenantId || session.client_reference_id;
+    const plan = session.metadata?.plan || 'premium';
+
+    if (!tenantId) {
+      console.error('Missing tenantId in Stripe session');
+      return NextResponse.json({ error: 'Missing tenantId' }, { status: 400 });
     }
 
     try {
       // REGISTRO IDEMPOTENTE NA EVENTSTORE
-      // A constraint UNIQUE(tenantId, externalEventId) garante a atomicidade
       await EventStore.append({
         tenantId,
         aggregateType: 'CHECKOUT',
@@ -43,16 +45,14 @@ export async function POST(request: Request) {
         externalEventId: event.id, // ID do Evento do Stripe para Idempotência
         payload: {
           tenantId,
-          userId,
           stripeSessionId: session.id,
           externalEventId: event.id,
-          plan: plan || 'premium'
+          plan: plan
         }
       });
 
       console.log(`[StripeWebhook] Processed checkout.session.completed for tenant ${tenantId}`);
     } catch (error: any) {
-      // Se for erro de duplicidade (P2002), retornamos 200 para o Stripe não repetir
       if (error.code === 'P2002') {
         console.warn(`[StripeWebhook] Event ${event.id} already processed for tenant ${tenantId}`);
         return NextResponse.json({ success: true, message: 'Already processed' });

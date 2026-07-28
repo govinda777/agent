@@ -1,39 +1,18 @@
 import { NextResponse } from 'next/server';
-import { ProcessCheckoutUseCase } from '@/modules/checkout/useCases/ProcessCheckoutUseCase';
 import { requireAuth } from '@/modules/auth/server';
-import { env } from '@/config/env';
-
-const processCheckoutUseCase = new ProcessCheckoutUseCase();
+import { startCheckoutHandler } from '@/modules/checkout/di';
+import { StartCheckoutCommand } from '@/modules/checkout/commands/StartCheckoutCommand';
 
 export async function POST(request: Request) {
   try {
-    const { tenantId } = await requireAuth(request);
+    const { tenantId, userId } = await requireAuth(request);
 
-    const body = await request.json();
-    
-    if (!body.productName || !body.amountInCents) {
-      return NextResponse.json({ error: 'Missing productName or amountInCents' }, { status: 400 });
-    }
-    const { productName, amountInCents } = body;
-    
-    const host = request.headers.get('host');
-    const protocol = env.nodeEnv === 'development' ? 'http' : 'https';
-    const baseUrl = `${protocol}://${host}`;
+    // Follow Command-based architecture
+    const checkoutUrl = await startCheckoutHandler.execute(
+      new StartCheckoutCommand(tenantId, userId, 'PRO')
+    );
 
-    const { url } = await processCheckoutUseCase.execute({
-      productName,
-      amountInCents,
-      tenantId,
-      successUrl: `${baseUrl}/onboarding?success=true`,
-      cancelUrl: `${baseUrl}/checkout?canceled=true`,
-      customerEmail: body.email,
-    });
-
-    if (!url) {
-      throw new Error('No checkout URL generated');
-    }
-
-    return NextResponse.json({ url }, { status: 200 });
+    return NextResponse.json({ url: checkoutUrl }, { status: 200 });
   } catch (error: any) {
     console.error('Error creating checkout:', error);
     return NextResponse.json(

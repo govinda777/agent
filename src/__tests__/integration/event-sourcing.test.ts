@@ -31,7 +31,7 @@ vi.mock('@/lib/prisma', () => ({
         return data;
       }),
       findMany: vi.fn(() => mockAgents.filter(a => a.tenantId === tenantId)),
-      findUnique: vi.fn(({ where }) => mockAgents.find(a => a.id === where.id && a.tenantId === tenantId))
+      findUnique: vi.fn(({ where }) => mockAgents.find(a => a.id === where.id && a.tenantId === tenantId)), upsert: vi.fn(({ where, create, update }) => { const existing = mockAgents.find(a => a.id === where.id); if (existing) { Object.assign(existing, update); return existing; } mockAgents.push(create); return create; })
     }
   }))
 }));

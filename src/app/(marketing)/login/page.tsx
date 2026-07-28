@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { usePrivy } from '@/modules/auth/client';
@@ -8,20 +8,56 @@ import { useSearchParams } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 
 export default function Login() {
-  const { login, ready, authenticated } = usePrivy();
+  const { login, ready, authenticated, getAccessToken } = usePrivy();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    if (ready && authenticated) {
-      const redirectParam = searchParams.get('redirect_to') ?? '/onboarding';
-      // If the redirect does not already contain a tenant segment, prepend the default tenant ID.
-      const defaultTenant  = 'd1b00000-0000-0000-0000-000000000000';
-      const hasTenant = /^\/[a-f0-9-]+/.test(redirectParam);
-      const finalRedirect = hasTenant ? redirectParam : `/${defaultTenant}${redirectParam.startsWith('/') ? '' : '/'}${redirectParam}`;
-      router.push(finalRedirect);
+    if (ready && authenticated && !isRedirecting) {
+      setIsRedirecting(true);
+
+      const handleAuthAndRedirect = async () => {
+        try {
+          const token = await getAccessToken();
+
+          if (!token) {
+             router.push('/');
+             return;
+          }
+
+          // Call our auth callback to sync user/tenant and get the session
+          const response = await fetch('/api/auth/callback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accessToken: token }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Authentication callback failed');
+          }
+
+          const { tenantId } = await response.json();
+
+          const redirectParam = searchParams.get('redirect_to');
+
+          if (redirectParam) {
+             const hasTenant = /^\/[a-f0-9-]+/.test(redirectParam);
+             const finalRedirect = hasTenant ? redirectParam : `/${tenantId}${redirectParam.startsWith('/') ? '' : '/'}${redirectParam}`;
+             router.push(finalRedirect);
+          } else {
+             // Default redirect to agents dashboard
+             router.push(`/${tenantId}/agents`);
+          }
+        } catch (error) {
+          console.error('Login error:', error);
+          setIsRedirecting(false);
+        }
+      };
+
+      handleAuthAndRedirect();
     }
-  }, [ready, authenticated, router, searchParams]);
+  }, [ready, authenticated, router, searchParams, getAccessToken, isRedirecting]);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 items-center justify-center p-6">
@@ -38,10 +74,10 @@ export default function Login() {
 
           <button
             onClick={login}
-            disabled={!ready || authenticated}
+            disabled={!ready || authenticated || isRedirecting}
             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {!ready ? 'Carregando...' : authenticated ? 'Redirecionando...' : 'Entrar / Registrar com Privy'}
+            {!ready ? 'Carregando...' : (authenticated || isRedirecting) ? 'Redirecionando...' : 'Entrar / Registrar com Privy'}
           </button>
         </div>
 

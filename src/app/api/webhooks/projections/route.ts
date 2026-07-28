@@ -6,6 +6,7 @@ import { initExecutionProjections } from '@/modules/agents/projections/Execution
 import { initQuotaEvents } from '@/modules/agents/projections/QuotaEventHandler';
 import { initTenantProjections } from '@/modules/tenants/projections/TenantProjectionHandler';
 import { initCheckoutProjections } from '@/modules/checkout/projections/CheckoutProjectionHandler';
+import { initUserProjections } from '@/modules/users/projections/UserProjectionHandler';
 
 // Inicializa os handlers de projeção
 initAgentProjections();
@@ -13,19 +14,13 @@ initExecutionProjections();
 initQuotaEvents();
 initTenantProjections();
 initCheckoutProjections();
+initUserProjections();
 
 /**
  * WEBHOOK DE PROJEÇÕES (ASYNC WORKER)
- *
- * Este endpoint é chamado pelo QStash para processar eventos de forma resiliente.
- * Ele re-publica o evento no EventBus local, mas agora em um processo
- * separado da requisição original do usuário.
  */
 export async function POST(request: Request) {
   try {
-    // Nota: Em produção, validar a assinatura do QStash aqui
-    // const signature = request.headers.get("upstash-signature");
-
     const event = await request.json() as IEvent;
 
     console.log(`[ProjectionWebhook] Received event: ${event.eventType} for tenant ${event.tenantId}`);
@@ -38,7 +33,6 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[ProjectionWebhook] Critical failure:', message);
 
-    // Retornamos 500 para o QStash tentar o retry automaticamente
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

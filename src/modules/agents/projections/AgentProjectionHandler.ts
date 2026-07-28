@@ -1,29 +1,37 @@
 import { eventBus } from '@/lib/cqrs/EventBus';
-import { getPrismaWithRLS } from '@/lib/prisma';
+import { agentRepository } from '../di';
 import { IEvent } from '@/lib/cqrs/types';
 
 /**
- * Atualiza o Read Model de Agentes (Tabela Agent clássica).
+ * Atualiza o Read Model de Agentes.
  */
 export const initAgentProjections = () => {
 
   eventBus.subscribe('AgentCreated', async (event: IEvent) => {
-    const db = getPrismaWithRLS(event.tenantId);
     const p = event.payload;
-
     const channels = p.channels as Record<string, boolean>;
 
-    await db.agent.create({
-      data: {
+    await agentRepository.save(event.tenantId, {
         id: event.aggregateId,
-        tenantId: event.tenantId,
         name: p.name as string,
         n8nWebhookUrl: p.n8nWebhookUrl as string,
         n8nAuthToken: p.n8nAuthToken as string,
-        channelWeb: channels.web ?? false,
-        channelWhatsapp: channels.whatsapp ?? false,
-        channelInstagram: channels.instagram ?? false,
-      }
+        channels: {
+            web: channels.web ?? false,
+            whatsapp: channels.whatsapp ?? false,
+            instagram: channels.instagram ?? false,
+        }
+    });
+  });
+
+  eventBus.subscribe('AgentUpdated', async (event: IEvent) => {
+    const p = event.payload;
+
+    await agentRepository.update(event.aggregateId, event.tenantId, {
+        name: p.name as string,
+        n8nWebhookUrl: p.n8nWebhookUrl as string,
+        n8nAuthToken: p.n8nAuthToken as string,
+        channels: p.channels as any
     });
   });
 };
